@@ -3,8 +3,8 @@ const THREE_CDN = "https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module
 let THREE = null;
 let loadPromise = null;
 let scene, camera, renderer, modules;
-let controlsEl = null;
 let initialized = false;
+const optionKeys = ["bokeh", "sphere", "tunnel"];
 
 const BokehShader = {
   uniforms: {
@@ -141,32 +141,12 @@ function initThree(container) {
     { name: "TUNNEL", type: "tunnel", color: 0xff0055 },
   ];
 
-  modules = [];
-  controlsEl = document.createElement("div");
-  controlsEl.id = "damien1-controls";
-  controlsEl.style.cssText =
-    "position:absolute;right:20px;top:20px;display:flex;gap:5px;z-index:2";
-  configs.forEach((cfg) => {
-    const mod = createModule(cfg);
-    modules.push(mod);
-    const btn = document.createElement("button");
-    btn.textContent = cfg.name;
-    btn.style.cssText =
-      "padding:6px 10px;background:#222;border:1px solid #0f0;color:#0f0;cursor:pointer;font-size:11px";
-    btn.onclick = () => {
-      mod.group.visible = !mod.group.visible;
-      btn.classList.toggle("active", mod.group.visible);
-    };
-    controlsEl.appendChild(btn);
-  });
-  container.appendChild(controlsEl);
-
+  modules = configs.map((cfg) => createModule(cfg));
   modules[0].group.visible = true;
-  if (controlsEl.children[0]) controlsEl.children[0].classList.add("active");
   initialized = true;
 }
 
-export function render(canvas, ctx, analyser, container) {
+export function render(canvas, ctx, analyser, container, options = {}) {
   if (!THREE) {
     if (!loadPromise)
       loadPromise = import(THREE_CDN).then((m) => {
@@ -186,6 +166,10 @@ export function render(canvas, ctx, analyser, container) {
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
   }
+
+  optionKeys.forEach((key, i) => {
+    modules[i].group.visible = key in options ? !!options[key] : i === 0;
+  });
 
   const dataArray = new Uint8Array(analyser.frequencyBinCount);
   analyser.getByteFrequencyData(dataArray);
@@ -213,8 +197,6 @@ export function cleanup(canvas, container) {
   canvas.style.display = "";
   if (renderer?.domElement?.parentElement)
     container.removeChild(renderer.domElement);
-  if (controlsEl?.parentElement) container.removeChild(controlsEl);
   scene?.clear();
   initialized = false;
-  controlsEl = null;
 }

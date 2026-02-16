@@ -3,8 +3,21 @@ const THREE_CDN = "https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module
 let THREE = null;
 let loadPromise = null;
 let scene, camera, renderer, modules, textureLoader;
-let controlsEl = null;
 let initialized = false;
+let lastBitmapFile = null;
+
+const optionKeys = [
+  "kickSphere",
+  "bassTunnel",
+  "highStars",
+  "midRings",
+  "glitchBox",
+  "lightLeak",
+  "floorGrid",
+  "waveLine",
+  "ghostSpiral",
+  "imageBitmap",
+];
 
 const moduleConfigs = [
   { id: 1, name: "KICK SPHERE", type: "sphere", color: 0x00ffff },
@@ -96,18 +109,7 @@ function createModule(cfg) {
     });
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(16, 10, 64, 64), mat);
     group.add(mesh);
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-    input.onchange = (e) => {
-      const url = URL.createObjectURL(e.target.files[0]);
-      textureLoader.load(url, (t) => {
-        mat.map = t;
-        mat.displacementMap = t;
-        mat.needsUpdate = true;
-      });
-    };
-    group.userData.input = input;
+    group.userData.bitmapMat = mat;
   }
 
   scene.add(group);
@@ -134,52 +136,12 @@ function initThree(container) {
   scene.add(light);
   scene.add(new THREE.AmbientLight(0x404040));
 
-  modules = [];
-  controlsEl = document.createElement("div");
-  controlsEl.id = "damien2-controls";
-  controlsEl.style.cssText =
-    "position:absolute;right:20px;top:20px;display:grid;grid-template-columns:1fr;gap:5px;z-index:2;pointer-events:auto";
-
-  moduleConfigs.forEach((cfg) => {
-    const mod = createModule(cfg);
-    modules.push(mod);
-
-    const wrapper = document.createElement("div");
-    wrapper.style.cssText = "display:flex;gap:2px";
-
-    const btn = document.createElement("button");
-    btn.textContent = `[OFF] ${cfg.name}`;
-    btn.style.cssText =
-      "padding:10px;background:#222;border:1px solid #0f0;color:#0f0;cursor:pointer;font-size:11px;flex-grow:1";
-    btn.onclick = () => {
-      mod.group.visible = !mod.group.visible;
-      btn.classList.toggle("active", mod.group.visible);
-      btn.textContent = mod.group.visible ? `[ON] ${cfg.name}` : `[OFF] ${cfg.name}`;
-    };
-    wrapper.appendChild(btn);
-
-    if (cfg.type === "bitmap") {
-      const up = document.createElement("button");
-      up.textContent = "JPG";
-      up.style.cssText =
-        "padding:10px;background:#555;border:1px solid #fff;color:#fff;cursor:pointer;flex-grow:0";
-      up.onclick = () => mod.group.userData.input.click();
-      wrapper.appendChild(up);
-    }
-
-    controlsEl.appendChild(wrapper);
-  });
-
-  container.appendChild(controlsEl);
+  modules = moduleConfigs.map((cfg) => createModule(cfg));
   modules[0].group.visible = true;
-  if (controlsEl.children[0]?.querySelector("button")) {
-    controlsEl.children[0].querySelector("button").classList.add("active");
-    controlsEl.children[0].querySelector("button").textContent = `[ON] ${moduleConfigs[0].name}`;
-  }
   initialized = true;
 }
 
-export function render(canvas, ctx, analyser, container) {
+export function render(canvas, ctx, analyser, container, options = {}) {
   if (!THREE) {
     if (!loadPromise) loadPromise = import(THREE_CDN).then((m) => (THREE = m));
     return;
@@ -194,6 +156,22 @@ export function render(canvas, ctx, analyser, container) {
     renderer.setSize(width, height);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
+  }
+
+  optionKeys.forEach((key, i) => {
+    modules[i].group.visible = key in options ? !!options[key] : i === 0;
+  });
+
+  const bitmapMod = modules.find((m) => m.type === "bitmap");
+  if (bitmapMod && options.bitmap instanceof File && options.bitmap !== lastBitmapFile) {
+    lastBitmapFile = options.bitmap;
+    const url = URL.createObjectURL(options.bitmap);
+    textureLoader.load(url, (t) => {
+      bitmapMod.group.userData.bitmapMat.map = t;
+      bitmapMod.group.userData.bitmapMat.displacementMap = t;
+      bitmapMod.group.userData.bitmapMat.needsUpdate = true;
+      URL.revokeObjectURL(url);
+    });
   }
 
   const dataArray = new Uint8Array(analyser.frequencyBinCount);
@@ -251,8 +229,7 @@ export function render(canvas, ctx, analyser, container) {
 export function cleanup(canvas, container) {
   if (!initialized) return;
   if (renderer?.domElement?.parentElement) container.removeChild(renderer.domElement);
-  if (controlsEl?.parentElement) container.removeChild(controlsEl);
   scene?.clear();
   initialized = false;
-  controlsEl = null;
+  lastBitmapFile = null;
 }

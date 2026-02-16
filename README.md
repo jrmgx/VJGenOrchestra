@@ -4,6 +4,14 @@ Also called VJ-GO.
 
 Orchestrator for VJ visualizers. Provides shared building blocks (audio, canvas) and lets users combine multiple effects.
 
+## Recommended prompt to create your own standalone visualizer for later integration
+
+Use this at the start of a coding session when building a new visualizer you plan to integrate into VJGenOrchestra later:
+
+> I'm building a standalone visualizer that I may later integrate into VJGenOrchestra. Keep the visual logic self-contained: separate the render/draw code from setup (audio, canvas creation, UI). Use a single render function that receives audio data and draws one frame—avoid tying the loop to document or window. Keep controls (toggles, sliders, etc.) in one place so they can be moved or wired elsewhere later. This will make conversion to the engine format straightforward.
+
+Iterate on your own as much as you need and when ready you can integrate it easily in the main project.
+
 ## How it works
 
 1. **Start** – Click to enable audio and canvas (browser requires user gesture).
@@ -40,10 +48,19 @@ The engine discovers visualizers from `manifest.json` on load. Add a new folder 
 
 Each visualizer lives in `visualizers/[id]/index.js`. Export:
 
-- **render(canvas, ctx, analyser, container)** – called each frame. Draw to the provided `canvas`/`ctx`, or use `container` to inject your own canvas (e.g. Three.js WebGL). Use `analyser.getByteFrequencyData()` or `getByteTimeDomainData()` for audio reactivity.
+- **render(canvas, ctx, analyser, container, options)** – called each frame. Draw to the provided `canvas`/`ctx`, or use `container` to inject your own canvas (e.g. Three.js WebGL). Use `analyser.getByteFrequencyData()` or `getByteTimeDomainData()` for audio reactivity. `options` is an object from `options.html` (see below).
 - **cleanup(canvas, container)** *(optional)* – called when the visualizer is turned off. Remove injected elements and restore state.
 
 Add the id to `manifest.json` to register it.
+
+## Options (options.html)
+
+Visualizers can define `options.html` in their folder for external controls. The engine loads it in an iframe and displays it in the options box.
+
+- Use `name` or `id` on inputs for keys. Values are passed as `options` to `render()`.
+- Example: `<input type="range" name="speed" min="0" max="2" value="1">` → `options.speed`
+- Checkbox → boolean, number/range → number, else string.
+- If no `options.html` exists, the section still appears (header only).
 
 ## Run
 
