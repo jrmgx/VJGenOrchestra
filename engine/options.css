@@ -2,10 +2,32 @@ html, body {
   background: transparent;
   margin: 0;
   padding: 0;
-  font-family: sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.85rem;
   font-weight: bold;
-  color: #000;
+  color: #c8c8c8;
 }
 label {
   display: block;
+  padding: 0.2rem 0;
+  cursor: pointer;
+}
+input[type="checkbox"] {
+  margin-right: 0.5rem;
+  accent-color: #555;
+}
+input[type="file"] {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: #999;
+}
+input[type="range"] {
+  margin-left: 0.5rem;
+  accent-color: #555;
+}
+input[type="color"] {
+  margin-left: 0.5rem;
+  border: 1px solid #444;
+  background: #222;
+  cursor: pointer;
 }

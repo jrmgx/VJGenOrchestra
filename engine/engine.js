@@ -92,7 +92,7 @@ function injectOptionsCss(iframe) {
   if (!doc) return;
   const link = doc.createElement("link");
   link.rel = "stylesheet";
-  link.href = optionsCssUrl;
+  link.href = optionsCssUrl + "?t=" + Date.now();
   doc.head.appendChild(link);
 }
 
@@ -173,6 +173,7 @@ startBtn.addEventListener("click", async () => {
 
   const blendSelect = document.createElement("select");
   blendSelect.id = "blend-mode";
+  blendSelect.className = "controls-row";
   BLEND_MODES.forEach((m, i) => {
     const opt = document.createElement("option");
     opt.value = i;
@@ -180,6 +181,7 @@ startBtn.addEventListener("click", async () => {
     if (m.label === "Lighten") opt.selected = true;
     blendSelect.appendChild(opt);
   });
+  controls.appendChild(blendSelect);
 
   function getOutputCanvas(slot) {
     const canvases = slot.container.querySelectorAll("canvas");
@@ -244,12 +246,33 @@ startBtn.addEventListener("click", async () => {
     return section;
   };
 
-  effects.forEach((effect, i) => {
+  function reorderSlotsFromDOM() {
+    const items = controls.querySelectorAll(".sortable-item");
+    const newOrder = [];
+    for (const item of items) {
+      const effectId = item.querySelector("button")?.dataset.effect;
+      const slot = slots.find((s) => s.effect.id === effectId);
+      if (slot) newOrder.push(slot);
+    }
+    slots.length = 0;
+    slots.push(...newOrder);
+  }
+
+  effects.forEach((effect) => {
+    const item = document.createElement("div");
+    item.className = "sortable-item controls-row";
+    item.dataset.effect = effect.id;
+
     const btn = document.createElement("button");
-    btn.textContent = effect.name;
     btn.dataset.effect = effect.id;
+    const handle = document.createElement("span");
+    handle.className = "drag-handle";
+    handle.title = "Drag to reorder";
+    handle.textContent = "⋮⋮";
+    btn.appendChild(handle);
+    btn.appendChild(document.createTextNode(effect.name));
     btn.addEventListener("click", () => {
-      const slot = slots[i];
+      const slot = slots.find((s) => s.effect.id === effect.id);
       const willActivate = !slot.active;
       if (!willActivate) {
         if (slot.effect.cleanup) {
@@ -266,7 +289,42 @@ startBtn.addEventListener("click", async () => {
       slot.active = willActivate;
       btn.classList.toggle("active", slot.active);
     });
-    controls.appendChild(btn);
+
+    item.appendChild(btn);
+    controls.appendChild(item);
   });
-  controls.appendChild(blendSelect);
+
+  let draggedItem = null;
+  controls.querySelectorAll(".sortable-item").forEach((item) => {
+    const handle = item.querySelector(".drag-handle");
+    handle.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      draggedItem = item;
+      item.classList.add("dragging");
+    });
+  });
+  document.addEventListener("mouseup", () => {
+    if (draggedItem) {
+      draggedItem.classList.remove("dragging");
+      reorderSlotsFromDOM();
+      draggedItem = null;
+    }
+  });
+  document.addEventListener("mousemove", (e) => {
+    if (!draggedItem) return;
+    const items = [...controls.querySelectorAll(".sortable-item")];
+    const idx = items.indexOf(draggedItem);
+    if (idx < 0) return;
+    const next = items[idx + 1];
+    const prev = items[idx - 1];
+    const nextRect = next?.getBoundingClientRect();
+    const prevRect = prev?.getBoundingClientRect();
+    const nextMid = nextRect ? nextRect.top + nextRect.height / 2 : 0;
+    const prevMid = prevRect ? prevRect.top + prevRect.height / 2 : 0;
+    if (next && e.clientY > nextMid) {
+      controls.insertBefore(draggedItem, next.nextSibling);
+    } else if (prev && e.clientY < prevMid) {
+      controls.insertBefore(draggedItem, prev);
+    }
+  });
 });

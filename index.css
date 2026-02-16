@@ -3,7 +3,7 @@ html, body {
   margin: 0;
   background: #000;
   color: #fff;
-  font-family: sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
 }
 #start {
   position: fixed;
@@ -28,29 +28,57 @@ html, body {
 }
 #controls {
   position: absolute;
-  bottom: 1rem;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 1rem;
+  left: 1rem;
   display: flex;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 0.25rem;
   z-index: 1;
 }
+#controls .controls-row {
+  width: 11rem;
+  min-width: 11rem;
+  box-sizing: border-box;
+}
+#controls .sortable-item {
+  display: flex;
+}
+#controls .sortable-item.dragging {
+  opacity: 0.6;
+}
 #controls button {
-  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
   cursor: pointer;
-  background: #333;
+  background: #222;
   color: #fff;
-  border: 1px solid #666;
+  border: 1px solid #444;
+  font-size: 0.9rem;
+}
+#controls .drag-handle {
+  cursor: grab;
+  color: #666;
+  padding-right: 0.25rem;
+  user-select: none;
+}
+#controls .drag-handle:active {
+  cursor: grabbing;
 }
 #controls button.active {
-  background: #555;
+  background: #3a3a3a;
+  border-color: #555;
 }
 #controls select {
-  padding: 0.5rem 1rem;
-  background: #333;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: #222;
   color: #fff;
-  border: 1px solid #666;
+  border: 1px solid #444;
   cursor: pointer;
+  font-size: 0.9rem;
 }
 #options-panel {
   position: absolute;
@@ -63,52 +91,72 @@ html, body {
 }
 #options-toggle {
   padding: 0.5rem 1rem;
-  background: #333;
-  color: #fff;
-  border: 1px solid #666;
+  background: #1a1a1a;
+  color: #e0e0e0;
+  border: 1px solid #333;
+  border-radius: 4px;
   cursor: pointer;
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+}
+#options-toggle:hover {
+  background: #252525;
+  border-color: #444;
 }
 #options-box {
   display: none;
   flex-direction: column;
   gap: 0.5rem;
-  background: rgba(255,255,255,0.5);
-  color: #000;
-  padding: 0.5rem;
-  border: 1px solid #444;
+  background: #161616;
+  color: #e0e0e0;
+  padding: 0.75rem;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
   max-height: 80vh;
   overflow-y: auto;
   margin-top: 0.5rem;
-  min-width: 200px;
+  min-width: 220px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
 }
 #options-box.visible {
   display: flex;
 }
 .options-section {
-  border: 1px solid #333;
-  background: rgba(255,255,255,0.3);
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  background: #1e1e1e;
+  overflow: hidden;
 }
 .options-section-header {
-  font-weight: bold;
-  padding: 0.5rem;
+  font-weight: 600;
+  padding: 0.6rem 0.75rem;
   user-select: none;
+  font-size: 0.85rem;
+  color: #c0c0c0;
+  background: #1a1a1a;
+  border-bottom: 1px solid transparent;
 }
 .options-section:not(.no-options) .options-section-header {
   cursor: pointer;
 }
+.options-section:not(.no-options) .options-section-header:hover {
+  color: #fff;
+}
 .options-section-header::after {
-  content: " ▼";
-  font-size: 0.7em;
+  content: " ▾";
+  font-size: 0.75em;
+  opacity: 0.7;
+  margin-left: 0.25rem;
 }
 .options-section.no-options .options-section-header::after {
   content: none;
 }
 .options-section.collapsed .options-section-header::after {
-  content: " ▶";
+  content: " ▸";
 }
 .options-section-content {
-  padding: 0.5rem;
-  color: #000;
+  padding: 0.75rem;
+  background: #1a1a1a;
 }
 .options-section.collapsed .options-section-content {
   display: none;
