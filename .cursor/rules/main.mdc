@@ -1,0 +1,26 @@
+---
+description: Base rules and project structure
+alwaysApply: true
+---
+
+# Coding rules
+
+This project is already in advanced development stage so:
+ - Explore the code and try to use existing Classes, methods, components.
+ - Use the same way of doing thing, most of the new feature will be variation of existing one.
+ - Refactor often.
+
+IMPORTANT:
+ - Do not be too verbose in you code.
+ - Find the root cause of bugs, do not try workarounds.
+ - Do not implement defensive code by default, keep everything simple.
+ - Always double check if your new code can be refactored with existing code.
+
+# General Project structure
+
+This project is an orchestrator of visualizers, it is called VJGenOrchestra.
+It will behave as a library giving access to component to visualizers.
+
+# Create a visualizer
+
+...
