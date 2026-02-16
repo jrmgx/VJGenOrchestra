@@ -23,4 +23,4 @@ It will behave as a library giving access to component to visualizers.
 
 # Create a visualizer
 
-...
+see ./visualizer.mdc

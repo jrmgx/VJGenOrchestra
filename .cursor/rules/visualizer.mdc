@@ -1,0 +1,11 @@
+---
+description: Create/update/work on a visualizer
+alwaysApply: false
+---
+
+To create/update/work on a new visualizer please follow these instructions:
+ - You must render onto the Canvas passed to render(canvas, ctx, analyser, container)
+ - Each visualizer renders to its own offscreen canvas; the engine composites all active ones onto the main canvas
+ - Prefer transparent backgrounds (clearRect or alpha compositing) so layers blend when multiple visualizers are active
+ - Get the audio reactive part from the engine/audio.js (see how ex1 is implemented for reference)
+ - For custom canvases (e.g. Three.js), use the container to inject your canvas; the engine will composite it

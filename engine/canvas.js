@@ -1,37 +1,28 @@
-let canvas = null;
-let ctx = null;
-let effect = null;
-let rafId = null;
+export function createOffscreenCanvas() {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d", { alpha: true });
 
-function resize() {
-  if (!canvas || !canvas.parentElement) return;
-  const { width, height } = canvas.parentElement.getBoundingClientRect();
-  if (canvas.width !== width || canvas.height !== height) {
-    canvas.width = width;
-    canvas.height = height;
+  function resize(width, height) {
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
   }
+
+  return { canvas, ctx, resize };
 }
 
-function loop() {
-  resize();
-  if (effect) {
-    effect();
-  } else {
-    ctx.fillStyle = "#000";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-  }
-  rafId = requestAnimationFrame(loop);
-}
-
-export function init(container) {
-  canvas = document.createElement("canvas");
-  ctx = canvas.getContext("2d");
+export function createMainCanvas(container) {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d", { alpha: true });
   container.appendChild(canvas);
-  resize();
-  loop();
-  return { canvas, ctx };
-}
 
-export function setEffect(fn) {
-  effect = fn;
+  function resize(width, height) {
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+  }
+
+  return { canvas, ctx, resize };
 }

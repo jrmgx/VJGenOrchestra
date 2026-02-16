@@ -9,8 +9,10 @@ export function render(canvas, ctx, analyser) {
   const barWidth = (w / bufferLength) * 2.5;
   let x = 0;
 
+  ctx.globalCompositeOperation = "destination-out";
   ctx.fillStyle = "rgba(0,0,0,0.1)";
   ctx.fillRect(0, 0, w, h);
+  ctx.globalCompositeOperation = "source-over";
 
   for (let i = 0; i < bufferLength; i++) {
     const v = dataArray[i] / 255;

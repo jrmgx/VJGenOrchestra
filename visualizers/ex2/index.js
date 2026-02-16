@@ -13,8 +13,7 @@ export function render(canvas, ctx, analyser) {
   }
   const scale = 1 + (maxAmp / 128) * 0.5;
 
-  ctx.fillStyle = "#000";
-  ctx.fillRect(0, 0, w, h);
+  ctx.clearRect(0, 0, w, h);
 
   ctx.save();
   ctx.translate(w / 2, h / 2);
