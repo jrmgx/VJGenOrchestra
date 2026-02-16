@@ -4,69 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VJGenOrchestra</title>
-    <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-            background: #000;
-            color: #fff;
-        }
-        #start {
-            position: fixed;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 2rem;
-        }
-        #app {
-            display: none;
-            width: 100%;
-            height: 100%;
-            position: relative;
-        }
-        #app canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-        #controls {
-            position: absolute;
-            bottom: 1rem;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 0.5rem;
-            z-index: 1;
-        }
-        #controls button {
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-            background: #333;
-            color: #fff;
-            border: 1px solid #666;
-        }
-        #controls button.active {
-            background: #555;
-        }
-        #options-box {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            background: rgba(0,0,0,0.7);
-            padding: 0.5rem;
-            border: 1px solid #444;
-        }
-        .options-section {
-            border: 1px solid #333;
-            padding: 0.5rem;
-        }
-        .options-section-header {
-            font-weight: bold;
-            margin-bottom: 0.25rem;
-        }
-    </style>
+    <link rel="stylesheet" href="index.css">
 </head>
 <body>
     <div id="start">Start</div>

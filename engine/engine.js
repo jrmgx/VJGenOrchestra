@@ -5,6 +5,36 @@ const startBtn = document.querySelector("#start");
 const app = document.querySelector("#app");
 const controls = document.querySelector("#controls");
 
+const BLEND_MODES = [
+  { label: "Normal", value: "source-over", base: "black" },
+  { label: "Dissolve", value: "source-over", base: "black" },
+  { label: "Darken", value: "darken", base: "black" },
+  { label: "Multiply", value: "multiply", base: "white" },
+  { label: "Color Burn", value: "color-burn", base: "white" },
+  { label: "Linear Burn", value: "color-burn", base: "white" },
+  { label: "Darker Color", value: "darken", base: "black" },
+  { label: "Lighten", value: "lighten", base: "black" },
+  { label: "Screen", value: "screen", base: "black" },
+  { label: "Color Dodge", value: "color-dodge", base: "black" },
+  { label: "Linear Dodge", value: "lighter", base: "black" },
+  { label: "Lighter Color", value: "lighten", base: "black" },
+  { label: "Overlay", value: "overlay", base: "black" },
+  { label: "Soft Light", value: "soft-light", base: "black" },
+  { label: "Hard Light", value: "hard-light", base: "black" },
+  { label: "Vivid Light", value: "hard-light", base: "black" },
+  { label: "Linear Light", value: "overlay", base: "black" },
+  { label: "Pin Light", value: "soft-light", base: "black" },
+  { label: "Hard Mix", value: "difference", base: "black" },
+  { label: "Difference", value: "difference", base: "black" },
+  { label: "Exclusion", value: "exclusion", base: "black" },
+  { label: "Subtract", value: "difference", base: "black" },
+  { label: "Divide", value: "color-dodge", base: "black" },
+  { label: "Hue", value: "hue", base: "black" },
+  { label: "Saturation", value: "saturation", base: "black" },
+  { label: "Color", value: "color", base: "black" },
+  { label: "Luminosity", value: "luminosity", base: "black" },
+];
+
 async function loadEffects() {
   const manifestUrl = new URL("../visualizers/manifest.json", import.meta.url);
   const ids = await fetch(manifestUrl + "?t=" + Date.now()).then((r) => r.json());
@@ -45,6 +75,8 @@ function extractOptions(doc) {
   return options;
 }
 
+const optionsCssUrl = new URL("options.css", import.meta.url).href;
+
 function setupOptionsListeners(slot, optionsContainer) {
   const update = () => {
     slot.options = extractOptions(optionsContainer.contentDocument || optionsContainer);
@@ -55,17 +87,52 @@ function setupOptionsListeners(slot, optionsContainer) {
   update();
 }
 
+function injectOptionsCss(iframe) {
+  const doc = iframe.contentDocument;
+  if (!doc) return;
+  const link = doc.createElement("link");
+  link.rel = "stylesheet";
+  link.href = optionsCssUrl;
+  doc.head.appendChild(link);
+}
+
+function setIframeHeight(iframe) {
+  try {
+    const doc = iframe.contentDocument;
+    if (doc?.body) {
+      iframe.style.height = (doc.body.scrollHeight + 10) + "px";
+    }
+  } catch (_) {}
+}
+
 startBtn.addEventListener("click", async () => {
   startBtn.style.display = "none";
   app.style.display = "block";
 
   const [effects, { analyser }] = await Promise.all([loadEffects(), startMic()]);
 
+  const optionsPanel = document.createElement("div");
+  optionsPanel.id = "options-panel";
+  app.insertBefore(optionsPanel, controls);
+
+  const optionsToggle = document.createElement("button");
+  optionsToggle.id = "options-toggle";
+  optionsToggle.textContent = "Options";
+  optionsToggle.type = "button";
+  optionsPanel.appendChild(optionsToggle);
+
   const optionsBox = document.createElement("div");
   optionsBox.id = "options-box";
-  optionsBox.style.cssText =
-    "position:absolute;top:1rem;right:1rem;z-index:2;max-height:80vh;overflow-y:auto;pointer-events:auto";
-  app.insertBefore(optionsBox, controls);
+  optionsPanel.appendChild(optionsBox);
+
+  const recalcIframeHeights = () => {
+    optionsBox.querySelectorAll("iframe").forEach(setIframeHeight);
+  };
+
+  optionsToggle.addEventListener("click", () => {
+    optionsBox.classList.toggle("visible");
+    requestAnimationFrame(() => requestAnimationFrame(recalcIframeHeights));
+  });
 
   const offscreenLayer = document.createElement("div");
   offscreenLayer.id = "offscreen-layer";
@@ -104,6 +171,16 @@ startBtn.addEventListener("click", async () => {
     };
   });
 
+  const blendSelect = document.createElement("select");
+  blendSelect.id = "blend-mode";
+  BLEND_MODES.forEach((m, i) => {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = m.label;
+    if (m.label === "Lighten") opt.selected = true;
+    blendSelect.appendChild(opt);
+  });
+
   function getOutputCanvas(slot) {
     const canvases = slot.container.querySelectorAll("canvas");
     return canvases.length > 0 ? canvases[canvases.length - 1] : slot.canvas;
@@ -119,7 +196,10 @@ startBtn.addEventListener("click", async () => {
       slot.effect.render(slot.canvas, slot.ctx, analyser, slot.container, slot.options ?? {});
     }
 
-    mainCtx.clearRect(0, 0, width, height);
+    const blend = BLEND_MODES[parseInt(blendSelect.value, 10)] || BLEND_MODES[0];
+    mainCtx.fillStyle = blend.base === "white" ? "#fff" : "#000";
+    mainCtx.fillRect(0, 0, width, height);
+    mainCtx.globalCompositeOperation = blend.value;
     for (const slot of slots) {
       if (!slot.active) continue;
       const out = getOutputCanvas(slot);
@@ -127,6 +207,7 @@ startBtn.addEventListener("click", async () => {
         mainCtx.drawImage(out, 0, 0, width, height);
       }
     }
+    mainCtx.globalCompositeOperation = "source-over";
 
     requestAnimationFrame(loop);
   }
@@ -137,18 +218,29 @@ startBtn.addEventListener("click", async () => {
     section.className = "options-section";
     const header = document.createElement("div");
     header.className = "options-section-header";
-    header.textContent = slot.effect.name;
-    section.appendChild(header);
-    const content = document.createElement("div");
-    content.className = "options-section-content";
     if (slot.effect.optionsUrl) {
+      header.textContent = slot.effect.name;
+      header.addEventListener("click", () => section.classList.toggle("collapsed"));
+      const content = document.createElement("div");
+      content.className = "options-section-content";
       const iframe = document.createElement("iframe");
       iframe.src = slot.effect.optionsUrl;
-      iframe.style.cssText = "border:0;width:100%;min-height:80px";
-      iframe.onload = () => setupOptionsListeners(slot, iframe);
+      iframe.style.cssText = "border:0;width:100%;min-height:40px";
+      iframe.onload = () => {
+        injectOptionsCss(iframe);
+        setupOptionsListeners(slot, iframe);
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => setIframeHeight(iframe));
+        });
+      };
       content.appendChild(iframe);
+      section.appendChild(header);
+      section.appendChild(content);
+    } else {
+      section.classList.add("no-options");
+      header.textContent = `${slot.effect.name} has no options`;
+      section.appendChild(header);
     }
-    section.appendChild(content);
     return section;
   };
 
@@ -176,4 +268,5 @@ startBtn.addEventListener("click", async () => {
     });
     controls.appendChild(btn);
   });
+  controls.appendChild(blendSelect);
 });

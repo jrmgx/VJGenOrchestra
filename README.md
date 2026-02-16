@@ -4,7 +4,16 @@ Also called VJ-GO.
 
 Orchestrator for VJ visualizers. Provides shared building blocks (audio, canvas) and lets users combine multiple effects.
 
-## Recommended prompt to create your own standalone visualizer for later integration
+## Create your own standalone visualizer
+
+### Create a good visualizer
+
+Do not add multiple effects into one visualizer, work on one concept and push it to its limit.
+The goal is to have multiple visualizer combined in the engine.
+
+Do not add too many options: maybe you can use some options when developing your visualizer to find the sweet spot for specific values and remove the options in the final version letting your value hardcoded.
+
+### Recommended prompt for later integration
 
 Use this at the start of a coding session when building a new visualizer you plan to integrate into VJGenOrchestra later:
 
@@ -24,16 +33,19 @@ Iterate on your own as much as you need and when ready you can integrate it easi
 ```
 VJGenOrchestra/
 ├── index.html
+├── index.css
 ├── engine/
 │   ├── engine.js      # Orchestrator + compositing loop
 │   ├── audio.js       # Mic access (getUserMedia + AnalyserNode)
-│   └── canvas.js      # Main canvas + offscreen canvas creation
+│   ├── canvas.js      # Main canvas + offscreen canvas creation
+│   └── options.css    # Shared styles for options.html (transparent bg, sans-serif bold black text)
 └── visualizers/
     ├── manifest.json  # ["ex1", "ex2", ...] – list of visualizer ids
     ├── ex1/
-    │   └── index.js   # Frequency bars
+    │   ├── index.js
+    │   └── options.html
     └── ex2/
-        └── index.js   # Rotating rays
+        └── index.js
 ```
 
 The engine discovers visualizers from `manifest.json` on load. Add a new folder and its id to the manifest to register it.
@@ -60,7 +72,8 @@ Visualizers can define `options.html` in their folder for external controls. The
 - Use `name` or `id` on inputs for keys. Values are passed as `options` to `render()`.
 - Example: `<input type="range" name="speed" min="0" max="2" value="1">` → `options.speed`
 - Checkbox → boolean, number/range → number, else string.
-- If no `options.html` exists, the section still appears (header only).
+- If no `options.html` exists, the section shows "[name] has no options" and is not collapsible.
+- **options.css**: The engine injects `engine/options.css` into the iframe on load (transparent background, sans-serif bold black text, labels as blocks). No need to link it manually.
 
 ## Run
 

@@ -1,0 +1,118 @@
+html, body {
+  height: 100%;
+  margin: 0;
+  background: #000;
+  color: #fff;
+  font-family: sans-serif;
+}
+#start {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 2rem;
+}
+#app {
+  display: none;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: #000;
+}
+#app canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+#controls {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.5rem;
+  z-index: 1;
+}
+#controls button {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  background: #333;
+  color: #fff;
+  border: 1px solid #666;
+}
+#controls button.active {
+  background: #555;
+}
+#controls select {
+  padding: 0.5rem 1rem;
+  background: #333;
+  color: #fff;
+  border: 1px solid #666;
+  cursor: pointer;
+}
+#options-panel {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+#options-toggle {
+  padding: 0.5rem 1rem;
+  background: #333;
+  color: #fff;
+  border: 1px solid #666;
+  cursor: pointer;
+}
+#options-box {
+  display: none;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: rgba(255,255,255,0.5);
+  color: #000;
+  padding: 0.5rem;
+  border: 1px solid #444;
+  max-height: 80vh;
+  overflow-y: auto;
+  margin-top: 0.5rem;
+  min-width: 200px;
+}
+#options-box.visible {
+  display: flex;
+}
+.options-section {
+  border: 1px solid #333;
+  background: rgba(255,255,255,0.3);
+}
+.options-section-header {
+  font-weight: bold;
+  padding: 0.5rem;
+  user-select: none;
+}
+.options-section:not(.no-options) .options-section-header {
+  cursor: pointer;
+}
+.options-section-header::after {
+  content: " ▼";
+  font-size: 0.7em;
+}
+.options-section.no-options .options-section-header::after {
+  content: none;
+}
+.options-section.collapsed .options-section-header::after {
+  content: " ▶";
+}
+.options-section-content {
+  padding: 0.5rem;
+  color: #000;
+}
+.options-section.collapsed .options-section-content {
+  display: none;
+}
+.options-section iframe {
+  background: transparent;
+}
