@@ -91,7 +91,7 @@ Go into your Windows Sound Settings and enable "Stereo Mix" as an input device. 
 
 ### Run the VJ-GO
 
-From the Generatives root:
+From the directory root:
 
 ```bash
 npx http-server -p 8888

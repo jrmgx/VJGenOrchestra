@@ -77,11 +77,26 @@ function extractOptions(doc) {
 
 const optionsCssUrl = new URL("options.css", import.meta.url).href;
 
+function applyOptions(doc, options) {
+  if (!doc || !options || Object.keys(options).length === 0) return;
+  for (const el of doc.querySelectorAll("input, select, textarea")) {
+    const key = el.name || el.id;
+    if (!key || !(key in options)) continue;
+    const v = options[key];
+    if (el.type === "file") continue;
+    if (el.type === "checkbox") el.checked = !!v;
+    else if (el.type === "number" || el.type === "range") el.value = String(v);
+    else el.value = v;
+  }
+}
+
 function setupOptionsListeners(slot, optionsContainer) {
   const update = () => {
     slot.options = extractOptions(optionsContainer.contentDocument || optionsContainer);
   };
   const doc = optionsContainer.contentDocument || optionsContainer;
+  applyOptions(doc, slot.options);
+  doc.dispatchEvent(new CustomEvent("optionsApplied"));
   doc.addEventListener("change", update);
   doc.addEventListener("input", update);
   update();
@@ -150,6 +165,7 @@ startBtn.addEventListener("click", async () => {
     const { canvas, ctx, resize } = createOffscreenCanvas();
     const container = document.createElement("div");
     container.style.cssText = "position:absolute;inset:0;width:100%;height:100%";
+    container.appendChild(canvas);
     offscreenLayer.appendChild(container);
 
     let active = false;
@@ -226,7 +242,7 @@ startBtn.addEventListener("click", async () => {
       const content = document.createElement("div");
       content.className = "options-section-content";
       const iframe = document.createElement("iframe");
-      iframe.src = slot.effect.optionsUrl;
+      iframe.src = slot.effect.optionsUrl + (slot.effect.optionsUrl.includes("?") ? "&" : "?") + "t=" + Date.now();
       iframe.style.cssText = "border:0;width:100%;min-height:40px";
       iframe.onload = () => {
         injectOptionsCss(iframe);
