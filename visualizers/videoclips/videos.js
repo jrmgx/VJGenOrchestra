@@ -5,7 +5,6 @@ const VIDEOS = [
   {path:"assets/videos/clips/dance-01.mp4",thumb:"assets/videos/clips/dance-01-thumb.jpg"},
   {path:"assets/videos/clips/dance-02.mp4",thumb:"assets/videos/clips/dance-02-thumb.jpg"},
   {path:"assets/videos/clips/dance-03.mp4",thumb:"assets/videos/clips/dance-03-thumb.jpg"},
-  {path:"assets/videos/clips/dance-04.mp4",thumb:"assets/videos/clips/dance-04-thumb.jpg"},
   {path:"assets/videos/clips/dance-05.mp4",thumb:"assets/videos/clips/dance-05-thumb.jpg"},
   {path:"assets/videos/clips/dance-06.mp4",thumb:"assets/videos/clips/dance-06-thumb.jpg"},
   {path:"assets/videos/clips/dance-07.mp4",thumb:"assets/videos/clips/dance-07-thumb.jpg"}
