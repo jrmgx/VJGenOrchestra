@@ -36,10 +36,11 @@ html, body {
   flex-direction: column;
   gap: 0.25rem;
   z-index: 1;
+  width: 14rem;
+  box-sizing: border-box;
 }
 #controls .controls-row {
-  width: 11rem;
-  min-width: 11rem;
+  width: 100%;
   box-sizing: border-box;
 }
 #controls .sortable-item {
@@ -68,6 +69,9 @@ html, body {
 }
 #controls .drag-handle:active {
   cursor: grabbing;
+}
+#controls button .key-hint {
+  margin-left: auto;
 }
 #controls button.active {
   background: #3a3a3a;
@@ -169,4 +173,43 @@ html, body {
 }
 .options-section iframe {
   background: transparent;
+}
+
+.key-hint {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25em;
+  padding: 0.15em 0.3em;
+  margin-left: 0.25em;
+  font-size: 0.75em;
+  font-weight: 600;
+  color: #1a1a1a;
+  background: #e8e8e8;
+  border: 1px solid #bbb;
+  border-radius: 3px;
+  box-shadow: 0 1px 0 #ccc, inset 0 1px 0 #fff;
+  font-family: inherit;
+}
+#controls .blend-row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  background: #222;
+  border: 1px solid #444;
+}
+#controls .blend-row .key-hint {
+  margin-left: 0;
+  flex-shrink: 0;
+}
+#controls .blend-row select {
+  flex: 1;
+  min-width: 0;
+  padding: 0.25rem 0.5rem;
+  background: #222;
+  color: #fff;
+  border: none;
+  font-size: 0.9rem;
+  cursor: pointer;
 }

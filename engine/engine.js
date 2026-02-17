@@ -206,9 +206,18 @@ startBtn.addEventListener("click", async () => {
     };
   });
 
+  const blendRow = document.createElement("div");
+  blendRow.className = "blend-row controls-row";
+  const blendPrevKey = document.createElement("span");
+  blendPrevKey.className = "key-hint";
+  blendPrevKey.textContent = "-";
+  blendPrevKey.title = "Previous blend mode";
+  const blendNextKey = document.createElement("span");
+  blendNextKey.className = "key-hint";
+  blendNextKey.textContent = "+";
+  blendNextKey.title = "Next blend mode";
   const blendSelect = document.createElement("select");
   blendSelect.id = "blend-mode";
-  blendSelect.className = "controls-row";
   BLEND_MODES.forEach((m, i) => {
     const opt = document.createElement("option");
     opt.value = i;
@@ -216,7 +225,10 @@ startBtn.addEventListener("click", async () => {
     if (m.label === "Lighten") opt.selected = true;
     blendSelect.appendChild(opt);
   });
-  controls.appendChild(blendSelect);
+  blendRow.appendChild(blendPrevKey);
+  blendRow.appendChild(blendSelect);
+  blendRow.appendChild(blendNextKey);
+  controls.appendChild(blendRow);
 
   function getOutputCanvas(slot) {
     const canvases = slot.container.querySelectorAll("canvas");
@@ -309,6 +321,29 @@ startBtn.addEventListener("click", async () => {
     for (const slot of newOrder) {
       if (slot.optionsSection) optionsBox.appendChild(slot.optionsSection);
     }
+    updateKeyHints();
+  }
+
+  const VISUALIZER_KEY_CODES = ["Digit1", "Digit2", "Digit3", "Digit4", "Digit5", "Digit6", "Digit7", "Digit8", "Digit9", "Digit0"];
+  const VISUALIZER_KEY_LABELS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
+  function updateKeyHints() {
+    const items = controls.querySelectorAll(".sortable-item");
+    items.forEach((item, i) => {
+      const btn = item.querySelector("button");
+      if (!btn) return;
+      let hint = btn.querySelector(".key-hint");
+      if (i < 10) {
+        if (!hint) {
+          hint = document.createElement("span");
+          hint.className = "key-hint";
+          btn.appendChild(hint);
+        }
+        hint.textContent = VISUALIZER_KEY_LABELS[i];
+        hint.title = `Toggle (${VISUALIZER_KEY_LABELS[i]})`;
+      } else {
+        hint?.remove();
+      }
+    });
   }
 
   effects.forEach((effect) => {
@@ -347,6 +382,38 @@ startBtn.addEventListener("click", async () => {
 
     item.appendChild(btn);
     controls.appendChild(item);
+  });
+  updateKeyHints();
+
+  function isOptionsFocused() {
+    const el = document.activeElement;
+    if (!el) return false;
+    if (["INPUT", "SELECT", "TEXTAREA"].includes(el.tagName)) return true;
+    if (el.tagName === "IFRAME" && optionsBox?.contains(el)) return true;
+    return false;
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (isOptionsFocused()) return;
+    const items = controls.querySelectorAll(".sortable-item");
+    const idx = VISUALIZER_KEY_CODES.indexOf(e.code);
+    if (idx >= 0 && idx < items.length) {
+      e.preventDefault();
+      const btn = items[idx].querySelector("button");
+      btn?.click();
+      return;
+    }
+    if (e.code === "Minus") {
+      e.preventDefault();
+      const v = parseInt(blendSelect.value, 10);
+      blendSelect.value = Math.max(0, v - 1);
+      return;
+    }
+    if (e.code === "Equal") {
+      e.preventDefault();
+      const v = parseInt(blendSelect.value, 10);
+      blendSelect.value = Math.min(BLEND_MODES.length - 1, v + 1);
+    }
   });
 
   let draggedItem = null;
