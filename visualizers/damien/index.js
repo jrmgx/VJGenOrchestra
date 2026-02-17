@@ -1,7 +1,4 @@
-const THREE_CDN = "https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js";
-
 let THREE = null;
-let loadPromise = null;
 let scene, camera, renderer, modules, textureLoader;
 let initialized = false;
 let lastBitmapFile = null;
@@ -143,8 +140,8 @@ function initThree(container) {
 
 export function render(canvas, ctx, analyser, container, options = {}) {
   if (!THREE) {
-    if (!loadPromise) loadPromise = import(THREE_CDN).then((m) => (THREE = m));
-    return;
+    if (!window.THREE) return;
+    THREE = window.THREE;
   }
 
   if (!initialized) {

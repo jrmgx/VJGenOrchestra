@@ -52,6 +52,7 @@ async function loadEffects() {
         render: mod.render,
         cleanup: mod.cleanup,
         optionsUrl: hasOptions ? optionsUrl : null,
+        postProcess: !!mod.postProcess,
       });
     } catch (e) {
       console.error(`Failed to load visualizer "${id}":`, e);
@@ -208,21 +209,31 @@ startBtn.addEventListener("click", async () => {
     const { width, height } = app.getBoundingClientRect();
     resizeMain(width, height);
 
-    for (const slot of slots) {
-      if (!slot.active) continue;
-      slot.resize(width, height);
-      slot.effect.render(slot.canvas, slot.ctx, analyser, slot.container, slot.options ?? {});
-    }
-
     const blend = BLEND_MODES[parseInt(blendSelect.value, 10)] || BLEND_MODES[0];
     mainCtx.fillStyle = blend.base === "white" ? "#fff" : "#000";
     mainCtx.fillRect(0, 0, width, height);
     mainCtx.globalCompositeOperation = blend.value;
+
     for (const slot of slots) {
       if (!slot.active) continue;
-      const out = getOutputCanvas(slot);
-      if (out && out.width && out.height) {
-        mainCtx.drawImage(out, 0, 0, width, height);
+      slot.resize(width, height);
+
+      if (slot.effect.postProcess) {
+        slot.effect.render(slot.canvas, slot.ctx, analyser, slot.container, slot.options ?? {}, mainCanvas);
+        const out = getOutputCanvas(slot);
+        if (out && out.width && out.height) {
+          mainCtx.globalCompositeOperation = "source-over";
+          mainCtx.fillStyle = blend.base === "white" ? "#fff" : "#000";
+          mainCtx.fillRect(0, 0, width, height);
+          mainCtx.drawImage(out, 0, 0, width, height);
+          mainCtx.globalCompositeOperation = blend.value;
+        }
+      } else {
+        slot.effect.render(slot.canvas, slot.ctx, analyser, slot.container, slot.options ?? {});
+        const out = getOutputCanvas(slot);
+        if (out && out.width && out.height) {
+          mainCtx.drawImage(out, 0, 0, width, height);
+        }
       }
     }
     mainCtx.globalCompositeOperation = "source-over";
