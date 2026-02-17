@@ -140,6 +140,24 @@ startBtn.addEventListener("click", async () => {
   const optionsBox = document.createElement("div");
   optionsBox.id = "options-box";
   optionsPanel.appendChild(optionsBox);
+  optionsPanel.classList.add("empty");
+
+  const syncOptionsPanelVisibility = () => {
+    const hasSections = optionsBox.children.length > 0;
+    optionsPanel.classList.toggle("empty", !hasSections);
+    optionsBox.classList.toggle("visible", hasSections);
+  };
+
+  const insertOptionsSectionInOrder = (slot) => {
+    const idx = slots.indexOf(slot);
+    for (let i = idx + 1; i < slots.length; i++) {
+      if (slots[i].optionsSection) {
+        optionsBox.insertBefore(slot.optionsSection, slots[i].optionsSection);
+        return;
+      }
+    }
+    optionsBox.appendChild(slot.optionsSection);
+  };
 
   const recalcIframeHeights = () => {
     optionsBox.querySelectorAll("iframe").forEach(setIframeHeight);
@@ -244,12 +262,17 @@ startBtn.addEventListener("click", async () => {
 
   const createOptionsSection = (slot) => {
     const section = document.createElement("div");
-    section.className = "options-section";
+    section.className = "options-section collapsed";
     const header = document.createElement("div");
     header.className = "options-section-header";
     if (slot.effect.optionsUrl) {
       header.textContent = slot.effect.name;
-      header.addEventListener("click", () => section.classList.toggle("collapsed"));
+      header.addEventListener("click", () => {
+        section.classList.toggle("collapsed");
+        if (!section.classList.contains("collapsed")) {
+          requestAnimationFrame(() => requestAnimationFrame(recalcIframeHeights));
+        }
+      });
       const content = document.createElement("div");
       content.className = "options-section-content";
       const iframe = document.createElement("iframe");
@@ -283,6 +306,9 @@ startBtn.addEventListener("click", async () => {
     }
     slots.length = 0;
     slots.push(...newOrder);
+    for (const slot of newOrder) {
+      if (slot.optionsSection) optionsBox.appendChild(slot.optionsSection);
+    }
   }
 
   effects.forEach((effect) => {
@@ -308,10 +334,12 @@ startBtn.addEventListener("click", async () => {
         if (slot.optionsSection) {
           slot.optionsSection.remove();
           slot.optionsSection = null;
+          syncOptionsPanelVisibility();
         }
       } else {
         slot.optionsSection = createOptionsSection(slot);
-        optionsBox.appendChild(slot.optionsSection);
+        insertOptionsSectionInOrder(slot);
+        syncOptionsPanelVisibility();
       }
       slot.active = willActivate;
       btn.classList.toggle("active", slot.active);

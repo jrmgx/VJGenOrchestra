@@ -1,6 +1,7 @@
 html, body {
   height: 100%;
   margin: 0;
+  overflow: hidden;
   background: #000;
   color: #fff;
   font-family: Arial, Helvetica, sans-serif;
@@ -18,6 +19,7 @@ html, body {
   display: none;
   width: 100%;
   height: 100%;
+  overflow: hidden;
   position: relative;
   background: #000;
 }
@@ -89,6 +91,9 @@ html, body {
   flex-direction: column;
   align-items: flex-end;
 }
+#options-panel.empty {
+  display: none;
+}
 #options-toggle {
   padding: 0.5rem 1rem;
   background: #1a1a1a;
@@ -122,6 +127,7 @@ html, body {
   display: flex;
 }
 .options-section {
+  flex-shrink: 0;
   border: 1px solid #2a2a2a;
   border-radius: 4px;
   background: #1e1e1e;
