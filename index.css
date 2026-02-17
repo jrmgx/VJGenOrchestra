@@ -43,6 +43,12 @@ html, body {
   width: 100%;
   box-sizing: border-box;
 }
+#controls .sortable-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+}
 #controls .sortable-item {
   display: flex;
 }

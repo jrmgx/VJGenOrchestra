@@ -39,26 +39,29 @@ async function loadEffects() {
   const manifestUrl = new URL("../visualizers/manifest.json", import.meta.url);
   const ids = await fetch(manifestUrl + "?t=" + Date.now()).then((r) => r.json());
   const baseUrl = new URL("../visualizers/", import.meta.url).href;
-  const effects = [];
-  for (const id of ids) {
-    try {
-      const mod = await import(`../visualizers/${id}/index.js?t=${Date.now()}`);
-      const optionsUrl = new URL(`${id}/options.html`, baseUrl).href;
-      const optionsRes = await fetch(optionsUrl).catch(() => null);
-      const hasOptions = optionsRes?.ok;
-      effects.push({
-        id,
-        name: id,
-        render: mod.render,
-        cleanup: mod.cleanup,
-        optionsUrl: hasOptions ? optionsUrl : null,
-        postProcess: !!mod.postProcess,
-      });
-    } catch (e) {
-      console.error(`Failed to load visualizer "${id}":`, e);
-    }
-  }
-  return effects;
+  const effects = await Promise.all(
+    ids.map(async (id) => {
+      try {
+        const [mod, optionsRes] = await Promise.all([
+          import(`../visualizers/${id}/index.js?t=${Date.now()}`),
+          fetch(new URL(`${id}/options.html`, baseUrl).href).catch(() => null),
+        ]);
+        const optionsUrl = new URL(`${id}/options.html`, baseUrl).href;
+        return {
+          id,
+          name: id,
+          render: mod.render,
+          cleanup: mod.cleanup,
+          optionsUrl: optionsRes?.ok ? optionsUrl : null,
+          postProcess: !!mod.postProcess,
+        };
+      } catch (e) {
+        console.error(`Failed to load visualizer "${id}":`, e);
+        return null;
+      }
+    })
+  );
+  return effects.filter(Boolean);
 }
 
 function extractOptions(doc) {
@@ -149,10 +152,11 @@ startBtn.addEventListener("click", async () => {
   };
 
   const insertOptionsSectionInOrder = (slot) => {
-    const idx = slots.indexOf(slot);
-    for (let i = idx + 1; i < slots.length; i++) {
-      if (slots[i].optionsSection) {
-        optionsBox.insertBefore(slot.optionsSection, slots[i].optionsSection);
+    const pos = effectOrder.indexOf(slot.effectIndex);
+    for (let i = pos + 1; i < effectOrder.length; i++) {
+      const ref = slots[effectOrder[i]]?.optionsSection;
+      if (ref && optionsBox.contains(ref)) {
+        optionsBox.insertBefore(slot.optionsSection, ref);
         return;
       }
     }
@@ -180,7 +184,7 @@ startBtn.addEventListener("click", async () => {
 
   const { canvas: mainCanvas, ctx: mainCtx, resize: resizeMain } = createMainCanvas(mainWrapper);
 
-  const slots = effects.map((effect) => {
+  const slots = effects.map((effect, effectIndex) => {
     const { canvas, ctx, resize } = createOffscreenCanvas();
     const container = document.createElement("div");
     container.style.cssText = "position:absolute;inset:0;width:100%;height:100%";
@@ -191,6 +195,7 @@ startBtn.addEventListener("click", async () => {
 
     return {
       effect,
+      effectIndex,
       container,
       canvas,
       ctx,
@@ -205,6 +210,8 @@ startBtn.addEventListener("click", async () => {
       },
     };
   });
+
+  let effectOrder = effects.map((_, i) => i);
 
   const blendRow = document.createElement("div");
   blendRow.className = "blend-row controls-row";
@@ -235,39 +242,53 @@ startBtn.addEventListener("click", async () => {
     return canvases.length > 0 ? canvases[canvases.length - 1] : slot.canvas;
   }
 
+  let width = 0;
+  let height = 0;
+  let blend = BLEND_MODES[0];
+  const updateSize = () => {
+    const r = app.getBoundingClientRect();
+    width = r.width;
+    height = r.height;
+  };
+  updateSize();
+  new ResizeObserver(updateSize).observe(app);
+  const syncBlend = () => {
+    blend = BLEND_MODES[parseInt(blendSelect.value, 10)] || BLEND_MODES[0];
+  };
+  blendSelect.addEventListener("change", syncBlend);
+  syncBlend();
+
+  function drawSlotOutput(slot, w, h) {
+    const out = getOutputCanvas(slot);
+    if (out?.width && out?.height) mainCtx.drawImage(out, 0, 0, w, h);
+  }
+
   function loop() {
-    const { width, height } = app.getBoundingClientRect();
-    resizeMain(width, height);
+    if (width && height) {
+      resizeMain(width, height);
+      mainCtx.fillStyle = blend.base === "white" ? "#fff" : "#000";
+      mainCtx.fillRect(0, 0, width, height);
+      mainCtx.globalCompositeOperation = blend.value;
 
-    const blend = BLEND_MODES[parseInt(blendSelect.value, 10)] || BLEND_MODES[0];
-    mainCtx.fillStyle = blend.base === "white" ? "#fff" : "#000";
-    mainCtx.fillRect(0, 0, width, height);
-    mainCtx.globalCompositeOperation = blend.value;
+      for (const i of effectOrder) {
+        const slot = slots[i];
+        if (!slot?.active) continue;
+        slot.resize(width, height);
 
-    for (const slot of slots) {
-      if (!slot.active) continue;
-      slot.resize(width, height);
-
-      if (slot.effect.postProcess) {
-        slot.effect.render(slot.canvas, slot.ctx, analyser, slot.container, slot.options ?? {}, mainCanvas);
-        const out = getOutputCanvas(slot);
-        if (out && out.width && out.height) {
+        if (slot.effect.postProcess) {
+          slot.effect.render(slot.canvas, slot.ctx, analyser, slot.container, slot.options ?? {}, mainCanvas);
           mainCtx.globalCompositeOperation = "source-over";
           mainCtx.fillStyle = blend.base === "white" ? "#fff" : "#000";
           mainCtx.fillRect(0, 0, width, height);
-          mainCtx.drawImage(out, 0, 0, width, height);
+          drawSlotOutput(slot, width, height);
           mainCtx.globalCompositeOperation = blend.value;
-        }
-      } else {
-        slot.effect.render(slot.canvas, slot.ctx, analyser, slot.container, slot.options ?? {});
-        const out = getOutputCanvas(slot);
-        if (out && out.width && out.height) {
-          mainCtx.drawImage(out, 0, 0, width, height);
+        } else {
+          slot.effect.render(slot.canvas, slot.ctx, analyser, slot.container, slot.options ?? {});
+          drawSlotOutput(slot, width, height);
         }
       }
+      mainCtx.globalCompositeOperation = "source-over";
     }
-    mainCtx.globalCompositeOperation = "source-over";
-
     requestAnimationFrame(loop);
   }
   loop();
@@ -309,25 +330,20 @@ startBtn.addEventListener("click", async () => {
   };
 
   function reorderSlotsFromDOM() {
-    const items = controls.querySelectorAll(".sortable-item");
-    const newOrder = [];
-    for (const item of items) {
-      const effectId = item.querySelector("button")?.dataset.effect;
-      const slot = slots.find((s) => s.effect.id === effectId);
-      if (slot) newOrder.push(slot);
-    }
-    slots.length = 0;
-    slots.push(...newOrder);
-    for (const slot of newOrder) {
-      if (slot.optionsSection) optionsBox.appendChild(slot.optionsSection);
+    const items = sortableContainer.querySelectorAll(".sortable-item");
+    effectOrder = [...items].map((item) => parseInt(item.dataset.effectIndex, 10)).filter((i) => !isNaN(i));
+    for (const i of effectOrder) {
+      const slot = slots[i];
+      if (slot?.optionsSection) optionsBox.appendChild(slot.optionsSection);
     }
     updateKeyHints();
   }
 
   const VISUALIZER_KEY_CODES = ["Digit1", "Digit2", "Digit3", "Digit4", "Digit5", "Digit6", "Digit7", "Digit8", "Digit9", "Digit0"];
   const VISUALIZER_KEY_LABELS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
+  const KEY_CODE_TO_IDX = new Map(VISUALIZER_KEY_CODES.map((c, i) => [c, i]));
   function updateKeyHints() {
-    const items = controls.querySelectorAll(".sortable-item");
+    const items = sortableContainer.querySelectorAll(".sortable-item");
     items.forEach((item, i) => {
       const btn = item.querySelector("button");
       if (!btn) return;
@@ -346,13 +362,17 @@ startBtn.addEventListener("click", async () => {
     });
   }
 
-  effects.forEach((effect) => {
+  const sortableContainer = document.createElement("div");
+  sortableContainer.className = "sortable-list";
+  for (const i of effectOrder) {
+    const effect = effects[i];
+    const slot = slots[i];
     const item = document.createElement("div");
     item.className = "sortable-item controls-row";
-    item.dataset.effect = effect.id;
+    item.dataset.effectIndex = i;
 
     const btn = document.createElement("button");
-    btn.dataset.effect = effect.id;
+    btn.dataset.effectIndex = i;
     const handle = document.createElement("span");
     handle.className = "drag-handle";
     handle.title = "Drag to reorder";
@@ -360,7 +380,6 @@ startBtn.addEventListener("click", async () => {
     btn.appendChild(handle);
     btn.appendChild(document.createTextNode(effect.name));
     btn.addEventListener("click", () => {
-      const slot = slots.find((s) => s.effect.id === effect.id);
       const willActivate = !slot.active;
       if (!willActivate) {
         if (slot.effect.cleanup) {
@@ -381,8 +400,9 @@ startBtn.addEventListener("click", async () => {
     });
 
     item.appendChild(btn);
-    controls.appendChild(item);
-  });
+    sortableContainer.appendChild(item);
+  }
+  controls.appendChild(sortableContainer);
   updateKeyHints();
 
   function isOptionsFocused() {
@@ -395,9 +415,10 @@ startBtn.addEventListener("click", async () => {
 
   document.addEventListener("keydown", (e) => {
     if (isOptionsFocused()) return;
-    const items = controls.querySelectorAll(".sortable-item");
-    const idx = VISUALIZER_KEY_CODES.indexOf(e.code);
-    if (idx >= 0 && idx < items.length) {
+    const idx = KEY_CODE_TO_IDX.get(e.code);
+    if (idx !== undefined) {
+      const items = sortableContainer.querySelectorAll(".sortable-item");
+      if (idx >= items.length) return;
       e.preventDefault();
       const btn = items[idx].querySelector("button");
       btn?.click();
@@ -405,19 +426,19 @@ startBtn.addEventListener("click", async () => {
     }
     if (e.code === "Minus") {
       e.preventDefault();
-      const v = parseInt(blendSelect.value, 10);
-      blendSelect.value = Math.max(0, v - 1);
+      blendSelect.value = Math.max(0, parseInt(blendSelect.value, 10) - 1);
+      syncBlend();
       return;
     }
     if (e.code === "Equal") {
       e.preventDefault();
-      const v = parseInt(blendSelect.value, 10);
-      blendSelect.value = Math.min(BLEND_MODES.length - 1, v + 1);
+      blendSelect.value = Math.min(BLEND_MODES.length - 1, parseInt(blendSelect.value, 10) + 1);
+      syncBlend();
     }
   });
 
   let draggedItem = null;
-  controls.querySelectorAll(".sortable-item").forEach((item) => {
+  sortableContainer.querySelectorAll(".sortable-item").forEach((item) => {
     const handle = item.querySelector(".drag-handle");
     handle.addEventListener("mousedown", (e) => {
       e.preventDefault();
@@ -434,7 +455,7 @@ startBtn.addEventListener("click", async () => {
   });
   document.addEventListener("mousemove", (e) => {
     if (!draggedItem) return;
-    const items = [...controls.querySelectorAll(".sortable-item")];
+    const items = [...sortableContainer.querySelectorAll(".sortable-item")];
     const idx = items.indexOf(draggedItem);
     if (idx < 0) return;
     const next = items[idx + 1];
@@ -444,9 +465,9 @@ startBtn.addEventListener("click", async () => {
     const nextMid = nextRect ? nextRect.top + nextRect.height / 2 : 0;
     const prevMid = prevRect ? prevRect.top + prevRect.height / 2 : 0;
     if (next && e.clientY > nextMid) {
-      controls.insertBefore(draggedItem, next.nextSibling);
+      sortableContainer.insertBefore(draggedItem, next.nextSibling);
     } else if (prev && e.clientY < prevMid) {
-      controls.insertBefore(draggedItem, prev);
+      sortableContainer.insertBefore(draggedItem, prev);
     }
   });
 });
