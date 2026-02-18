@@ -16,14 +16,67 @@ IMPORTANT:
  - Do not implement defensive code by default, keep everything simple.
  - Always double check if your new code can be refactored with existing code.
 
-# General Project structure
+# General Project Info
 
 This project is an orchestrator of visualizers, it is called VJGenOrchestra.
 It will behave as a library giving access to component to visualizers.
 
+## Structure
+
+```
+VJGenOrchestra/
+├── index.html
+├── index.css
+├── engine/
+│   ├── engine.js        # Orchestrator + compositing loop
+│   ├── audio.js         # Mic access (getUserMedia + AnalyzerNode)
+│   ├── audioAnalysis.js # Pre-filtered audio values (kick, bass, mid, high)
+│   ├── audio-options.html # Global Audio options (detection tuning)
+│   ├── canvas.js        # Main canvas + offscreen canvas creation
+│   └── options.css      # Shared styles for options.html (transparent bg, sans-serif bold black text)
+└── visualizers/
+    ├── manifest.json  # ["ex1", "ex2", ...] – list of visualizer ids
+    ├── ex1/
+    │   ├── index.js
+    │   └── options.html
+    └── ex2/
+        └── index.js
+```
+
+The engine discovers visualizers from `manifest.json` on load. Add a new folder and its id to the manifest to register it.
+
+## Canvas architecture
+
+- **Main canvas** – Single visible canvas shown to the user. Cleared and recomposited each frame.
+- **Offscreen canvases** – Each active visualizer renders to its own offscreen canvas. The engine composites them onto the main canvas in manifest order (first = bottom layer).
+- Visualizers can render on transparent backgrounds to allow layering and future image operations between canvases.
+
+## Visualizer contract
+
+Each visualizer lives in `visualizers/[id]/index.js`. Export:
+
+- **render(canvas, ctx, audio, container, options, engine)** – called each frame. Draw to the provided `canvas`/`ctx`, or use `container` to inject your own canvas (e.g. Three.js WebGL). Use `audio.getByteFrequencyData()` or `audio.analyser.getByteTimeDomainData()` for raw audio. Pre-filtered values: `audio.kick` (0/1), `audio.bass`, `audio.mid`, `audio.high` (0–1). `options` is an object from `options.html` (see below). `engine.text` is the text from the bottom panel (for visualizers that need it).
+- **cleanup(canvas, container)** *(optional)* – called when the visualizer is turned off. Remove injected elements and restore state.
+
+Add the id to `manifest.json` to register it.
+
+## Options (options.html)
+
+Visualizers can define `options.html` in their folder for external controls. The engine loads it in an iframe and displays it in the options box.
+
+- Use `name` or `id` on inputs for keys. Values are passed as `options` to `render()`.
+- Example: `<input type="range" name="speed" min="0" max="2" value="1">` → `options.speed`
+- Checkbox → boolean, number/range → number, else string.
+- If no `options.html` exists, the section shows "[name] has no options" and is not collapsible.
+- **options.css**: The engine injects `engine/options.css` into the iframe on load (transparent background, sans-serif bold black text, labels as blocks). No need to link it manually.
+- **File inputs**: Do NOT put file inputs in options.html. Export `fileInputs = { key: { accept, label } }` from index.js; the engine creates trigger buttons in the main app. See convert-to-visualizer skill.
+- **Audio options**: A global "Audio" section appears at the top of the options panel. Use it to tune kick detection (threshold, diff, frames) for all visualizers.
+- **Text input**: A textarea in the bottom panel provides `engine.text` to all visualizers. Use it for text-based effects (e.g. Text visualizer).
+
+
 # Create a visualizer
 
-see ./visualizer.mdc
+see related skill: /convert-to-visualizer
 
 # Start a server
 

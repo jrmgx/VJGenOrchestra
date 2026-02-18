@@ -1,6 +1,12 @@
 [
-    "exVisualizer",
-    "damien",
-    "videoclips",
-    "exPostProcess"
+    "Text",
+    "ExVisualizer",
+    "Damien",
+    "VideoClips",
+    "Load3D",
+    "Bloom",
+    "Chromatic",
+    "Kaleidoscope",
+    "ExPostProcess",
+    "Glitch"
 ]

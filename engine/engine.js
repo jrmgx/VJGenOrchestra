@@ -1,4 +1,6 @@
 import { start as startMic } from "./audio.js";
+import { createAudio, updateAudio } from "./audioAnalysis.js";
+import { createBottomPanel } from "./bottomPanel.js";
 import { createOffscreenCanvas, createMainCanvas } from "./canvas.js";
 
 const startBtn = document.querySelector("#start");
@@ -40,6 +42,7 @@ async function loadEffects() {
           cleanup: mod.cleanup,
           optionsUrl: optionsRes?.ok ? optionsUrl : null,
           postProcess: !!mod.postProcess,
+          fileInputs: mod.fileInputs || null,
         };
       } catch (e) {
         console.error(`Failed to load visualizer "${id}":`, e);
@@ -80,11 +83,36 @@ function applyOptions(doc, options) {
   }
 }
 
-function setupOptionsListeners(slot, optionsContainer) {
+function setupOptionsListeners(slot, optionsContainer, contentContainer) {
   const update = () => {
-    slot.options = extractOptions(optionsContainer.contentDocument || optionsContainer);
+    slot.options = { ...extractOptions(optionsContainer.contentDocument || optionsContainer), ...slot.fileInputValues };
   };
   const doc = optionsContainer.contentDocument || optionsContainer;
+  if (slot.effect.fileInputs && contentContainer) {
+    const fileInputsDiv = document.createElement("div");
+    fileInputsDiv.className = "options-file-inputs";
+    for (const [key, cfg] of Object.entries(slot.effect.fileInputs)) {
+      const row = document.createElement("label");
+      row.className = "options-file-row";
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = cfg.accept || "*";
+      input.style.display = "none";
+      input.id = `file-${slot.effect.id}-${key}`;
+      input.addEventListener("change", () => {
+        slot.fileInputValues[key] = input.files?.[0] ?? null;
+        update();
+      });
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = cfg.label || key;
+      btn.addEventListener("click", () => input.click());
+      row.appendChild(btn);
+      row.appendChild(input);
+      fileInputsDiv.appendChild(row);
+    }
+    contentContainer.insertBefore(fileInputsDiv, contentContainer.firstChild);
+  }
   applyOptions(doc, slot.options);
   doc.dispatchEvent(new CustomEvent("optionsApplied"));
   doc.addEventListener("change", update);
@@ -115,26 +143,50 @@ startBtn.addEventListener("click", async () => {
   app.style.display = "block";
 
   const [effects, { analyser }] = await Promise.all([loadEffects(), startMic()]);
+  const audio = createAudio(analyser);
+  const bottomPanel = createBottomPanel(audio, analyser, app);
 
   const optionsPanel = document.createElement("div");
   optionsPanel.id = "options-panel";
   app.insertBefore(optionsPanel, controls);
 
+  const buttonsRow = document.createElement("div");
+  buttonsRow.className = "options-panel-buttons";
+
+  const fullscreenBtn = document.createElement("button");
+  fullscreenBtn.id = "fullscreen-toggle";
+  fullscreenBtn.type = "button";
+  fullscreenBtn.title = "Toggle fullscreen";
+  fullscreenBtn.textContent = "Fullscreen";
+  fullscreenBtn.addEventListener("click", () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      document.documentElement.requestFullscreen();
+    }
+  });
+  document.addEventListener("fullscreenchange", () => {
+    fullscreenBtn.textContent = document.fullscreenElement ? "Exit FS" : "Fullscreen";
+  });
+  buttonsRow.appendChild(fullscreenBtn);
+
   const optionsToggle = document.createElement("button");
   optionsToggle.id = "options-toggle";
   optionsToggle.textContent = "Options";
   optionsToggle.type = "button";
-  optionsPanel.appendChild(optionsToggle);
+  buttonsRow.appendChild(optionsToggle);
+
+  optionsPanel.appendChild(buttonsRow);
 
   const optionsBox = document.createElement("div");
   optionsBox.id = "options-box";
   optionsPanel.appendChild(optionsBox);
   optionsPanel.classList.add("empty");
 
+  let audioOptions = {};
+
   const syncOptionsPanelVisibility = () => {
-    const hasSections = optionsBox.children.length > 0;
-    optionsPanel.classList.toggle("empty", !hasSections);
-    optionsBox.classList.toggle("visible", hasSections);
+    optionsPanel.classList.toggle("empty", optionsBox.children.length === 0);
   };
 
   const insertOptionsSectionInOrder = (slot) => {
@@ -187,6 +239,7 @@ startBtn.addEventListener("click", async () => {
       ctx,
       resize,
       options: {},
+      fileInputValues: {},
       optionsSection: null,
       get active() {
         return active;
@@ -249,12 +302,30 @@ startBtn.addEventListener("click", async () => {
     if (out?.width && out?.height) mainCtx.drawImage(out, 0, 0, w, h);
   }
 
+  const engine = { text: "" };
+  let lastTime = performance.now();
+  const fpsSamples = [];
+
   function loop() {
+    const now = performance.now();
+    const delta = now - lastTime;
+    if (delta > 0) fpsSamples.push(1000 / delta);
+    if (fpsSamples.length > 10) fpsSamples.shift();
+    lastTime = now;
+    const fps = fpsSamples.length ? Math.round(fpsSamples.reduce((a, b) => a + b, 0) / fpsSamples.length) : 0;
+    bottomPanel.updateFps(fps);
+
     if (width && height) {
+      engine.text = bottomPanel.getText();
+
       resizeMain(width, height);
       mainCtx.fillStyle = blend.base === "white" ? "#fff" : "#000";
       mainCtx.fillRect(0, 0, width, height);
       mainCtx.globalCompositeOperation = blend.value;
+
+      audioOptions = bottomPanel.getOptions();
+      updateAudio(audio, audioOptions);
+      bottomPanel.draw();
 
       for (const i of effectOrder) {
         const slot = slots[i];
@@ -262,14 +333,14 @@ startBtn.addEventListener("click", async () => {
         slot.resize(width, height);
 
         if (slot.effect.postProcess) {
-          slot.effect.render(slot.canvas, slot.ctx, analyser, slot.container, slot.options ?? {}, mainCanvas);
+          slot.effect.render(slot.canvas, slot.ctx, audio, slot.container, slot.options ?? {}, engine, mainCanvas);
           mainCtx.globalCompositeOperation = "source-over";
           mainCtx.fillStyle = blend.base === "white" ? "#fff" : "#000";
           mainCtx.fillRect(0, 0, width, height);
           drawSlotOutput(slot, width, height);
           mainCtx.globalCompositeOperation = blend.value;
         } else {
-          slot.effect.render(slot.canvas, slot.ctx, analyser, slot.container, slot.options ?? {});
+          slot.effect.render(slot.canvas, slot.ctx, audio, slot.container, slot.options ?? {}, engine);
           drawSlotOutput(slot, width, height);
         }
       }
@@ -299,7 +370,7 @@ startBtn.addEventListener("click", async () => {
       iframe.style.cssText = "border:0;width:100%;min-height:40px";
       iframe.onload = () => {
         injectOptionsCss(iframe);
-        setupOptionsListeners(slot, iframe);
+        setupOptionsListeners(slot, iframe, content);
         requestAnimationFrame(() => {
           requestAnimationFrame(() => setIframeHeight(iframe));
         });
@@ -374,6 +445,7 @@ startBtn.addEventListener("click", async () => {
         if (slot.optionsSection) {
           slot.optionsSection.remove();
           slot.optionsSection = null;
+          slot.fileInputValues = {};
           syncOptionsPanelVisibility();
         }
       } else {
@@ -394,6 +466,7 @@ startBtn.addEventListener("click", async () => {
   function isOptionsFocused() {
     const el = document.activeElement;
     if (!el) return false;
+    if (el.closest("#bottom-panel")) return false;
     if (["INPUT", "SELECT", "TEXTAREA"].includes(el.tagName)) return true;
     if (el.tagName === "IFRAME" && optionsBox?.contains(el)) return true;
     return false;
@@ -401,6 +474,7 @@ startBtn.addEventListener("click", async () => {
 
   document.addEventListener("keydown", (e) => {
     if (isOptionsFocused()) return;
+    if (!e.ctrlKey) return;
     const idx = KEY_CODE_TO_IDX.get(e.code);
     if (idx !== undefined) {
       const items = sortableContainer.querySelectorAll(".sortable-item");

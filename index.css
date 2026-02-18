@@ -1,3 +1,11 @@
+:root {
+  --radius: 4px;
+  --bg-dark: #1a1a1a;
+  --bg-mid: #222;
+  --border: 1px solid #333;
+  --border-mid: 1px solid #444;
+}
+
 html, body {
   height: 100%;
   margin: 0;
@@ -62,9 +70,10 @@ html, body {
   width: 100%;
   padding: 0.5rem 0.75rem;
   cursor: pointer;
-  background: #222;
+  background: var(--bg-mid);
   color: #fff;
-  border: 1px solid #444;
+  border: var(--border-mid);
+  border-radius: var(--radius);
   font-size: 0.9rem;
 }
 #controls .drag-handle {
@@ -86,9 +95,10 @@ html, body {
 #controls select {
   width: 100%;
   padding: 0.5rem 0.75rem;
-  background: #222;
+  background: var(--bg-mid);
   color: #fff;
-  border: 1px solid #444;
+  border: var(--border-mid);
+  border-radius: var(--radius);
   cursor: pointer;
   font-size: 0.9rem;
 }
@@ -100,16 +110,31 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  gap: 0.5rem;
 }
-#options-panel.empty {
-  display: none;
+.options-panel-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+#fullscreen-toggle {
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-dark);
+  color: #e0e0e0;
+  border: var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 1rem;
+}
+#fullscreen-toggle:hover {
+  background: #252525;
+  border-color: #444;
 }
 #options-toggle {
   padding: 0.5rem 1rem;
-  background: #1a1a1a;
+  background: var(--bg-dark);
   color: #e0e0e0;
-  border: 1px solid #333;
-  border-radius: 4px;
+  border: var(--border);
+  border-radius: var(--radius);
   cursor: pointer;
   font-size: 0.9rem;
   letter-spacing: 0.02em;
@@ -122,24 +147,19 @@ html, body {
   display: none;
   flex-direction: column;
   gap: 0.5rem;
-  background: #161616;
   color: #e0e0e0;
-  padding: 0.75rem;
-  border: 1px solid #2a2a2a;
-  border-radius: 6px;
   max-height: 80vh;
   overflow-y: auto;
   margin-top: 0.5rem;
   min-width: 220px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
 }
 #options-box.visible {
   display: flex;
 }
 .options-section {
   flex-shrink: 0;
-  border: 1px solid #2a2a2a;
-  border-radius: 4px;
+  border: var(--border);
+  border-radius: var(--radius);
   background: #1e1e1e;
   overflow: hidden;
 }
@@ -149,7 +169,7 @@ html, body {
   user-select: none;
   font-size: 0.85rem;
   color: #c0c0c0;
-  background: #1a1a1a;
+  background: var(--bg-dark);
   border-bottom: 1px solid transparent;
 }
 .options-section:not(.no-options) .options-section-header {
@@ -172,13 +192,37 @@ html, body {
 }
 .options-section-content {
   padding: 0.75rem;
-  background: #1a1a1a;
+  background: var(--bg-dark);
+  overflow: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.options-section-content::-webkit-scrollbar {
+  display: none;
 }
 .options-section.collapsed .options-section-content {
   display: none;
 }
 .options-section iframe {
   background: transparent;
+}
+.options-file-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.options-file-row button {
+  padding: 0.35rem 0.6rem;
+  font-size: 0.85rem;
+  background: #333;
+  color: #e0e0e0;
+  border: var(--border-mid);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.options-file-row button:hover {
+  background: #444;
 }
 
 .key-hint {
@@ -202,8 +246,9 @@ html, body {
   align-items: center;
   gap: 0.25rem;
   padding: 0.5rem 0.75rem;
-  background: #222;
-  border: 1px solid #444;
+  background: var(--bg-mid);
+  border: var(--border-mid);
+  border-radius: var(--radius);
 }
 #controls .blend-row .key-hint {
   margin-left: 0;
@@ -213,7 +258,7 @@ html, body {
   flex: 1;
   min-width: 0;
   padding: 0.25rem 0.5rem;
-  background: #222;
+  background: transparent;
   color: #fff;
   border: none;
   font-size: 0.9rem;

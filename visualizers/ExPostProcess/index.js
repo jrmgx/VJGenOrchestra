@@ -26,7 +26,7 @@ function initThree(container) {
 
 export const postProcess = true;
 
-export function render(canvas, ctx, analyser, container, options = {}, sourceCanvas) {
+export function render(canvas, ctx, audio, container, options = {}, engine, sourceCanvas) {
   if (!THREE) {
     if (!window.THREE) return;
     THREE = window.THREE;
@@ -53,11 +53,9 @@ export function render(canvas, ctx, analyser, container, options = {}, sourceCan
     cubeMat.color.setHex(0xffffff);
   }
 
-  const dataArray = new Uint8Array(analyser.frequencyBinCount);
-  analyser.getByteFrequencyData(dataArray);
-  const bass = dataArray[2] / 255;
-  const mid = dataArray[20] / 255;
-  const high = dataArray[60] / 255;
+  const bass = audio.bass ?? 0;
+  const mid = audio.mid ?? 0;
+  const high = audio.high ?? 0;
 
   const sizePercent = (options.size ?? 90) / 100;
   const visibleHeight = 2 * 5 * Math.tan((75 * Math.PI) / 360);

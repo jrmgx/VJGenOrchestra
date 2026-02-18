@@ -1,3 +1,5 @@
+export const fileInputs = { bitmap: { accept: "image/*", label: "Choose image" } };
+
 let THREE = null;
 let scene, camera, renderer, modules, textureLoader;
 let initialized = false;
@@ -138,7 +140,7 @@ function initThree(container) {
   initialized = true;
 }
 
-export function render(canvas, ctx, analyser, container, options = {}) {
+export function render(canvas, ctx, audio, container, options = {}) {
   if (!THREE) {
     if (!window.THREE) return;
     THREE = window.THREE;
@@ -171,11 +173,9 @@ export function render(canvas, ctx, analyser, container, options = {}) {
     });
   }
 
-  const dataArray = new Uint8Array(analyser.frequencyBinCount);
-  analyser.getByteFrequencyData(dataArray);
-  const bass = dataArray[2] / 255;
-  const mid = dataArray[20] / 255;
-  const high = dataArray[60] / 255;
+  const bass = audio.bass ?? 0;
+  const mid = audio.mid ?? 0;
+  const high = audio.high ?? 0;
 
   modules.forEach((m) => {
     if (!m.group.visible) return;

@@ -2,99 +2,122 @@
 
 Also called VJ-GO.
 
-Orchestrator for VJ visualizers. Provides shared building blocks (audio, canvas) and lets users combine multiple effects.
+Orchestrator for VJ visualizers.
+Provides shared building blocks (audio, canvas) and lets users combine multiple visualizers.
 
-## Create your own standalone visualizer
+The end goal is to allow anyone to vibe-code their visualizer idea and easily integrate them with other visualizers to combine things together.
 
-### Create a good visualizer
+## Guide
 
-Do not add multiple effects into one visualizer, work on one concept and push it to its limit.
-The goal is to have multiple visualizer combined in the engine.
+This is how you should use this project:
+1. First you (vibe) code a standalone visualizer on your own.
+2. You integrate your visualizer into the Orchestrator.
+3. You play with the Orchestrator (that now contains your visualizer as well as the other ones).
 
-Do not add too many options: maybe you can use some options when developing your visualizer to find the sweet spot for specific values and remove the options in the final version letting your value hardcoded.
+### 1- How to create a new standalone visualizer for later integration in the orchestrator?
 
-### Recommended prompt for later integration
+Open your favorite (vibe) coding editor/tool and ask for anything.
+Use the recommended prompt below to start your session.
 
-Use this at the start of a coding session when building a new visualizer you plan to integrate into VJGenOrchestra later:
+For example:
+> I want to show bright bubbles that moves with the rhythm of the music.
+> Lighting effect should pop when a kick happen.
+> Make an option so I can display more or less bubble on screen.
+
+#### Recommended prompt for later integration
+
+Use this at the start of your coding session when building a new visualizer:
 
 > I'm building a standalone visualizer that I may later integrate into VJGenOrchestra. Keep the visual logic self-contained: separate the render/draw code from setup (audio, canvas creation, UI). Use a single render function that receives audio data and draws one frame—avoid tying the loop to document or window. Keep controls (toggles, sliders, etc.) in one place so they can be moved or wired elsewhere later. This will make conversion to the engine format straightforward.
 
 Iterate on your own as much as you need and when ready you can integrate it easily in the main project.
 
-## How it works
+#### Tips to create a good visualizer
 
-1. **Start** – Click to enable audio and canvas (browser requires user gesture).
-2. **Engine** – Wires the audio analyser and canvas display.
-3. **Canvas system** – One visible canvas composites all active visualizers. Each visualizer renders to its own offscreen canvas; the engine draws them in order onto the main canvas.
-4. **Controls** – Toggle each visualizer on/off independently. Multiple can be active at once.
+Do not add multiple effects into one visualizer, work on one concept and push it to its limit.
+The goal is to have multiple visualizers combined in the engine.
 
-## Structure
+The engine exposes pre-filtered audio values (kick, bass, mid, high), live kick detection, text input and more to come.
 
-```
-VJGenOrchestra/
-├── index.html
-├── index.css
-├── engine/
-│   ├── engine.js      # Orchestrator + compositing loop
-│   ├── audio.js       # Mic access (getUserMedia + AnalyserNode)
-│   ├── canvas.js      # Main canvas + offscreen canvas creation
-│   └── options.css    # Shared styles for options.html (transparent bg, sans-serif bold black text)
-└── visualizers/
-    ├── manifest.json  # ["ex1", "ex2", ...] – list of visualizer ids
-    ├── ex1/
-    │   ├── index.js
-    │   └── options.html
-    └── ex2/
-        └── index.js
-```
+Do not add too many options: maybe you can use some options when developing your visualizer to find the sweet spot for specific values
+and remove the options in the final version letting your value hardcoded.
 
-The engine discovers visualizers from `manifest.json` on load. Add a new folder and its id to the manifest to register it.
+### 2- How to integrate your own visualizer in VJGenOrchestra?
 
-## Canvas architecture
+For this part you will need `git` and a GitHub account.
+Cursor App is also recommended.
 
-- **Main canvas** – Single visible canvas shown to the user. Cleared and recomposited each frame.
-- **Offscreen canvases** – Each active visualizer renders to its own offscreen canvas. The engine composites them onto the main canvas in manifest order (first = bottom layer).
-- Visualizers can render on transparent backgrounds to allow layering and future image operations between canvases.
+#### Integration
 
-## Visualizer contract
+When your visualizer is working, you should have some files for it.
+To integrate it into this project:
+1. Get the VJGenOrchestra source code with `git`
+2. Create a new directory under `visualizers` with the name you want.
+3. Copy your visualizer files into it.
+4. Prompt something like:
+> Convert the visualizer in **DIR** so it works with VJGenOrchestra engine /convert-to-visualizer
 
-Each visualizer lives in `visualizers/[id]/index.js`. Export:
+The best App to do that would be Cursor.com as some skills have been written to help it do the job.
+If needed you can use the rules for your own tool, they are in `.cursor/skills`
 
-- **render(canvas, ctx, analyser, container, options)** – called each frame. Draw to the provided `canvas`/`ctx`, or use `container` to inject your own canvas (e.g. Three.js WebGL). Use `analyser.getByteFrequencyData()` or `getByteTimeDomainData()` for audio reactivity. `options` is an object from `options.html` (see below).
-- **cleanup(canvas, container)** *(optional)* – called when the visualizer is turned off. Remove injected elements and restore state.
+#### Contribution
 
-Add the id to `manifest.json` to register it.
+To publish your visualizer to the project, you should:
+1. Create a `git branch` with your visualizer name
+2. Commit your changes to it
+3. Push the branch back to GitHub
 
-## Options (options.html)
+### 3- How to run VJGenOrchestra?
 
-Visualizers can define `options.html` in their folder for external controls. The engine loads it in an iframe and displays it in the options box.
+#### Setup your computer
 
-- Use `name` or `id` on inputs for keys. Values are passed as `options` to `render()`.
-- Example: `<input type="range" name="speed" min="0" max="2" value="1">` → `options.speed`
-- Checkbox → boolean, number/range → number, else string.
-- If no `options.html` exists, the section shows "[name] has no options" and is not collapsible.
-- **options.css**: The engine injects `engine/options.css` into the iframe on load (transparent background, sans-serif bold black text, labels as blocks). No need to link it manually.
+##### Windows
 
-## Run
+Go into your Windows Sound Settings and enable "Stereo Mix" as an input device.
+Then VJ-GO will treat your computer's output as a "Microphone," letting you listen to it easily.
 
-### Setup your computer
-
-#### Windows
-
-Go into your Windows Sound Settings and enable "Stereo Mix" as an input device. Then VJ-GO will treat your computer's output as a "Microphone," letting you listen to it easily.
-
-#### macOS
+##### macOS
 
 1. Install [Blackhole](https://existential.audio/blackhole/) (virtual audio driver).
-2. Open **Audio MIDI Setup** and create a **Multi-Output Device** that includes Blackhole and your speakers. Set it as the system output so audio plays and is routed to Blackhole.
+2. Open **Audio MIDI Setup** and create a **Multi-Output Device** that includes Blackhole and your speakers.
+   Set it as the system output so audio plays and is routed to Blackhole.
 3. When VJ-GO asks for microphone access, choose **Blackhole** as the input. This lets the visuals react to your system audio.
 
-### Run the VJ-GO
+#### Run VJ-GO
 
-From the directory root:
+You need `npm` installed on your computer, then from the directory root:
 
 ```bash
 npx http-server -p 8888
 ```
 
-Open `http://localhost:8888/VJGenOrchestra/`.
+And open `http://localhost:8888`
+
+Most feature are self explanatory, but the bottom panel may need more info, check the next section.
+
+Keyboard shortcut that are shown on the user interface are accessible with `ctrl` key + symbol.
+
+##### Bottom panel
+
+The bottom panel has multiple parts:
+
+1- The **audio** part on the left lets you tune kick detection in real time while playing.
+
+##### What it shows
+
+- **Bass | Mid | High** – Three bars for the current frequency levels (bass = low, mid = mid, high = treble).
+- **Red/green line** – The **min level** threshold. Bass must be above this line for a kick to trigger. The line turns green when bass is above it.
+- **Rise strip** (below the bars) – How much the bass jumped from the previous frame. The **orange vertical line** is the **min rise** threshold. When the gray/green bar passes that line and bass is above the red line, a kick is detected.
+- **Kick LED** – Lights up when a kick is detected.
+
+##### Sliders
+
+| Slider      | Meaning                                                                 |
+|------------|-------------------------------------------------------------------------|
+| **Min level**  | Ignore kicks below this bass level. Use it to filter out noise.         |
+| **Min rise**   | How much the bass must jump in one frame to trigger. Lower = more sensitive. |
+| **Hold time**  | How long the kick stays "on" (in frames). Longer = visualizers react longer. |
+
+Kick detection uses **transient** logic: it reacts to a sudden rise in bass, not to the level alone. If changing **Min level** has little effect, try **Min rise** instead—it controls sensitivity to bass jumps.
+
+2- The **webcam** part on the right is to be defined. // TODO

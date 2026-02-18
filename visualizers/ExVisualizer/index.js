@@ -1,7 +1,7 @@
 const dataArray = new Uint8Array(512);
 
-export function render(canvas, ctx, analyser, container, options = {}) {
-  analyser.getByteFrequencyData(dataArray);
+export function render(canvas, ctx, audio, container, options = {}) {
+  audio.getByteFrequencyData(dataArray);
   const bufferLength = dataArray.length;
 
   const w = canvas.width;
