@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8">
+<style>
+.particle-selector { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.5rem 0; }
+.particle-selector button { padding: 0.5rem 1rem; border: 2px solid #444; background: #222; cursor: pointer; border-radius: 4px; font-size: 1.2rem; }
+.particle-selector button:hover { border-color: #666; }
+.particle-selector button.selected { border-color: #0af; }
+.particle-selector button img { display: block; width: 48px; height: 48px; object-fit: contain; }
+</style>
+</head>
+<body>
+  <label>Particle type</label>
+  <div class="particle-selector" id="particleSelector"></div>
+  <input type="hidden" name="particleType" id="particleInput" value="bubble">
+  <label>Count <input type="range" name="count" min="200" max="8000" step="100" value="889"></label>
+  <label>Speed <input type="range" name="speed" min="0" max="3" step="0.1" value="1"></label>
+  <label>Size <input type="range" name="size" min="50" max="400" value="200"></label>
+  <label>Spread <input type="range" name="spread" min="50" max="150" value="150"></label>
+  <label>Transition ms <input type="range" name="transitionMs" min="800" max="5000" step="100" value="2500"></label>
+  <script>
+(function() {
+  const container = document.getElementById("particleSelector");
+  const input = document.getElementById("particleInput");
+  const base = new URL(".", document.baseURI).href;
+  const types = [
+    { id: "bubble", label: "Bubble", img: "../../assets/textures/bubble.png" },
+    { id: "orbs", label: "Orbs", img: "../../assets/textures/orbs.png" },
+    { id: "text", label: "🙂", img: null }
+  ];
+
+  function syncSelection() {
+    const v = input.value;
+    container.querySelectorAll("button").forEach(btn => {
+      btn.classList.toggle("selected", btn.dataset.id === v);
+    });
+  }
+
+  types.forEach((t) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.dataset.id = t.id;
+    if (t.img) {
+      const img = document.createElement("img");
+      img.src = new URL(t.img, base).href;
+      img.alt = t.label;
+      btn.appendChild(img);
+    } else {
+      btn.textContent = t.label;
+    }
+    btn.addEventListener("click", () => {
+      input.value = t.id;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      syncSelection();
+    });
+    container.appendChild(btn);
+  });
+
+  if (!input.value) input.value = "bubble";
+  document.addEventListener("optionsApplied", syncSelection);
+  syncSelection();
+})();
+  </script>
+</body>
+</html>

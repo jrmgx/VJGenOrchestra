@@ -89,6 +89,7 @@ function setupOptionsListeners(slot, optionsContainer, contentContainer) {
   };
   const doc = optionsContainer.contentDocument || optionsContainer;
   if (slot.effect.fileInputs && contentContainer) {
+    contentContainer.querySelector(".options-file-inputs")?.remove();
     const fileInputsDiv = document.createElement("div");
     fileInputsDiv.className = "options-file-inputs";
     for (const [key, cfg] of Object.entries(slot.effect.fileInputs)) {

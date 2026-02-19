@@ -1,13 +1,14 @@
 [
     "Text",
-    "ExVisualizer",
+    "SimpleBar",
     "Damien",
     "VideoClips",
     "Load3D",
     "Bubbles",
+    "Particles",
     "Bloom",
     "Chromatic",
     "Kaleidoscope",
-    "ExPostProcess",
+    "SimpleCube",
     "Glitch"
 ]
