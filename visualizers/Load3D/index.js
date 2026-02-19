@@ -2,61 +2,56 @@ export const fileInputs = { glb: { accept: ".glb,.gltf", label: "Choose GLB" } }
 
 let THREE = null;
 let GLTFLoader = null;
-let scene, camera, renderer, model, placeholder, baseScale = 1;
-let initialized = false;
-let loadPromise = null;
-let lastUrl = null;
-let lastGlbFile = null;
-let lastBlobUrl = null;
 
-function getLoadUrl(options) {
+function getLoadUrl(options, state) {
   if (options.glb instanceof File) {
-    if (options.glb === lastGlbFile) return lastBlobUrl;
-    if (lastBlobUrl) URL.revokeObjectURL(lastBlobUrl);
-    lastGlbFile = options.glb;
-    lastBlobUrl = URL.createObjectURL(options.glb);
-    return lastBlobUrl;
+    if (options.glb === state.lastGlbFile) return state.lastBlobUrl;
+    if (state.lastBlobUrl) URL.revokeObjectURL(state.lastBlobUrl);
+    state.lastGlbFile = options.glb;
+    state.lastBlobUrl = URL.createObjectURL(options.glb);
+    return state.lastBlobUrl;
   }
-  lastGlbFile = null;
-  if (lastBlobUrl) {
-    URL.revokeObjectURL(lastBlobUrl);
-    lastBlobUrl = null;
+  state.lastGlbFile = null;
+  if (state.lastBlobUrl) {
+    URL.revokeObjectURL(state.lastBlobUrl);
+    state.lastBlobUrl = null;
   }
   return (options.url || "").trim();
 }
 
-function initThree(container) {
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(
+function initThree(container, state) {
+  state.scene = new THREE.Scene();
+  state.camera = new THREE.PerspectiveCamera(
     75,
     container.clientWidth / container.clientHeight,
     0.1,
     1000
   );
-  camera.position.z = 5;
+  state.camera.position.z = 5;
 
-  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.setClearColor(0x000000, 0);
-  container.appendChild(renderer.domElement);
+  state.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  state.renderer.setSize(container.clientWidth, container.clientHeight);
+  state.renderer.setClearColor(0x000000, 0);
+  container.appendChild(state.renderer.domElement);
 
-  scene.add(new THREE.DirectionalLight(0xffffff, 1));
-  scene.add(new THREE.AmbientLight(0x404040));
+  state.scene.add(new THREE.DirectionalLight(0xffffff, 1));
+  state.scene.add(new THREE.AmbientLight(0x404040));
 
-  placeholder = new THREE.Mesh(
+  state.placeholder = new THREE.Mesh(
     new THREE.BoxGeometry(1, 1, 1),
     new THREE.MeshBasicMaterial({ color: 0x4488ff, wireframe: true })
   );
-  scene.add(placeholder);
-  initialized = true;
+  state.scene.add(state.placeholder);
+  state.baseScale = 1;
+  state.initialized = true;
 }
 
-async function loadModel(url) {
-  if (!url || url === lastUrl) return;
-  lastUrl = url;
-  if (model) {
-    scene.remove(model);
-    model.traverse((o) => {
+async function loadModel(url, state) {
+  if (!url || url === state.lastUrl) return;
+  state.lastUrl = url;
+  if (state.model) {
+    state.scene.remove(state.model);
+    state.model.traverse((o) => {
       o.geometry?.dispose();
       if (o.material) {
         if (Array.isArray(o.material)) o.material.forEach((m) => m.dispose?.());
@@ -64,22 +59,22 @@ async function loadModel(url) {
       }
     });
   }
-  model = null;
+  state.model = null;
 
   const loader = new GLTFLoader();
   return new Promise((resolve, reject) => {
     loader.load(
       url,
       (gltf) => {
-        model = gltf.scene;
-        const box = new THREE.Box3().setFromObject(model);
+        state.model = gltf.scene;
+        const box = new THREE.Box3().setFromObject(state.model);
         const center = box.getCenter(new THREE.Vector3());
         const size = box.getSize(new THREE.Vector3());
-        model.position.sub(center);
+        state.model.position.sub(center);
         const maxDim = Math.max(size.x, size.y, size.z);
-        baseScale = maxDim > 0 ? 4 / maxDim : 1;
-        model.scale.setScalar(baseScale);
-        scene.add(model);
+        state.baseScale = maxDim > 0 ? 4 / maxDim : 1;
+        state.model.scale.setScalar(state.baseScale);
+        state.scene.add(state.model);
         resolve();
       },
       undefined,
@@ -103,20 +98,21 @@ export async function render(canvas, ctx, audio, container, options = {}) {
     GLTFLoader = mod.GLTFLoader;
   }
 
-  if (!initialized) initThree(container);
+  const state = container.visualizerState;
+  if (!state.initialized) initThree(container, state);
 
   const { width, height } = container.getBoundingClientRect();
-  if (renderer.domElement.width !== width || renderer.domElement.height !== height) {
-    renderer.setSize(width, height);
-    camera.aspect = width / height;
-    camera.updateProjectionMatrix();
+  if (state.renderer.domElement.width !== width || state.renderer.domElement.height !== height) {
+    state.renderer.setSize(width, height);
+    state.camera.aspect = width / height;
+    state.camera.updateProjectionMatrix();
   }
 
-  const url = getLoadUrl(options);
-  if (url && url !== lastUrl) {
-    loadPromise = loadModel(url).catch(() => { loadPromise = null; });
+  const url = getLoadUrl(options, state);
+  if (url && url !== state.lastUrl) {
+    state.loadPromise = loadModel(url, state).catch(() => { state.loadPromise = null; });
   }
-  if (loadPromise) await loadPromise;
+  if (state.loadPromise) await state.loadPromise;
 
   const bass = audio.bass ?? 0;
   const mid = audio.mid ?? 0;
@@ -125,41 +121,42 @@ export async function render(canvas, ctx, audio, container, options = {}) {
   const speed = (options.speed ?? 1) * (0.01 + (bass + mid + high) * 0.04);
   const scale = (options.scale ?? 100) / 100;
 
-  if (model) {
-    placeholder.visible = false;
-    model.rotation.y += speed;
-    model.rotation.x += speed * 0.3 * (mid - high);
-    model.scale.setScalar(baseScale * scale * (0.8 + bass * 0.5));
+  if (state.model) {
+    state.placeholder.visible = false;
+    state.model.rotation.y += speed;
+    state.model.rotation.x += speed * 0.3 * (mid - high);
+    state.model.scale.setScalar(state.baseScale * scale * (0.8 + bass * 0.5));
   } else {
-    placeholder.visible = true;
-    placeholder.rotation.y += speed;
-    placeholder.rotation.x += speed * 0.3 * (mid - high);
+    state.placeholder.visible = true;
+    state.placeholder.rotation.y += speed;
+    state.placeholder.rotation.x += speed * 0.3 * (mid - high);
   }
 
-  renderer.render(scene, camera);
+  state.renderer.render(state.scene, state.camera);
 }
 
-export function cleanup(canvas, container) {
-  if (!initialized) return;
-  if (placeholder) scene.remove(placeholder);
-  if (model) {
-    scene.remove(model);
-    model.traverse((o) => {
+export function cleanup(canvas, container, slot) {
+  const state = container.visualizerState;
+  if (!state?.initialized) return;
+  if (state.placeholder) state.scene.remove(state.placeholder);
+  if (state.model) {
+    state.scene.remove(state.model);
+    state.model.traverse((o) => {
       o.geometry?.dispose();
       if (o.material) {
         if (Array.isArray(o.material)) o.material.forEach((m) => m.dispose());
         else o.material.dispose?.();
       }
     });
-    model = null;
-    baseScale = 1;
+    state.model = null;
+    state.baseScale = 1;
   }
-  if (renderer?.domElement?.parentElement) container.removeChild(renderer.domElement);
-  scene?.clear();
-  initialized = false;
-  lastUrl = null;
-  lastGlbFile = null;
-  if (lastBlobUrl) URL.revokeObjectURL(lastBlobUrl);
-  lastBlobUrl = null;
-  loadPromise = null;
+  if (state.renderer?.domElement?.parentElement) container.removeChild(state.renderer.domElement);
+  state.scene?.clear();
+  state.lastUrl = null;
+  state.lastGlbFile = null;
+  if (state.lastBlobUrl) URL.revokeObjectURL(state.lastBlobUrl);
+  state.lastBlobUrl = null;
+  state.loadPromise = null;
+  Object.keys(state).forEach((k) => delete state[k]);
 }

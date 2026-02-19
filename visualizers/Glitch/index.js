@@ -1,6 +1,4 @@
 const JPEG_HEADER_SIZE = 615;
-let cachedImage = null;
-let pipelineInFlight = false;
 
 function glitchBytes(bytes, iterations) {
   if (bytes.length <= JPEG_HEADER_SIZE + 4) return;
@@ -10,9 +8,9 @@ function glitchBytes(bytes, iterations) {
   }
 }
 
-function runPipeline(sourceCanvas, options, canvas, ctx) {
-  if (pipelineInFlight || !sourceCanvas?.width || !sourceCanvas?.height) return;
-  pipelineInFlight = true;
+function runPipeline(sourceCanvas, options, canvas, ctx, state) {
+  if (state.pipelineInFlight || !sourceCanvas?.width || !sourceCanvas?.height) return;
+  state.pipelineInFlight = true;
 
   const quality = options.quality ?? 0.9;
   let iterations = options.iterations ?? 3;
@@ -26,12 +24,12 @@ function runPipeline(sourceCanvas, options, canvas, ctx) {
         glitchBytes(bytes, iterations);
         const corrupted = new Blob([bytes], { type: "image/jpeg" });
         const bitmap = await createImageBitmap(corrupted);
-        if (cachedImage) cachedImage.close?.();
-        cachedImage = bitmap;
+        if (state.cachedImage) state.cachedImage.close?.();
+        state.cachedImage = bitmap;
       } catch (e) {
         console.warn("Glitch pipeline error:", e);
       } finally {
-        pipelineInFlight = false;
+        state.pipelineInFlight = false;
       }
     },
     "image/jpeg",
@@ -42,6 +40,7 @@ function runPipeline(sourceCanvas, options, canvas, ctx) {
 export const postProcess = true;
 
 export function render(canvas, ctx, audio, container, options = {}, engine, sourceCanvas) {
+  const state = container.visualizerState;
   const { width, height } = canvas;
   if (!width || !height) return;
 
@@ -56,19 +55,21 @@ export function render(canvas, ctx, audio, container, options = {}, engine, sour
     return;
   }
 
-  if (cachedImage) {
-    ctx.drawImage(cachedImage, 0, 0, width, height);
+  if (state.cachedImage) {
+    ctx.drawImage(state.cachedImage, 0, 0, width, height);
   } else {
     ctx.drawImage(sourceCanvas, 0, 0, width, height);
   }
 
-  runPipeline(sourceCanvas, { ...options, audio }, canvas, ctx);
+  runPipeline(sourceCanvas, { ...options, audio }, canvas, ctx, state);
 }
 
-export function cleanup(canvas, container) {
-  if (cachedImage) {
-    cachedImage.close?.();
-    cachedImage = null;
+export function cleanup(canvas, container, slot) {
+  const state = container.visualizerState;
+  if (!state) return;
+  if (state.cachedImage) {
+    state.cachedImage.close?.();
+    state.cachedImage = null;
   }
-  pipelineInFlight = false;
+  state.pipelineInFlight = false;
 }

@@ -56,7 +56,8 @@ The engine discovers visualizers from `manifest.json` on load. Add a new folder 
 Each visualizer lives in `visualizers/[id]/index.js`. Export:
 
 - **render(canvas, ctx, audio, container, options, engine)** – called each frame. Draw to the provided `canvas`/`ctx`, or use `container` to inject your own canvas (e.g. Three.js WebGL). Use `audio.getByteFrequencyData()` or `audio.analyser.getByteTimeDomainData()` for raw audio. Pre-filtered values: `audio.kick` (0/1), `audio.bass`, `audio.mid`, `audio.high` (0–1). `options` is an object from `options.html` (see below). `engine.text` is the text from the bottom panel (for visualizers that need it).
-- **cleanup(canvas, container)** *(optional)* – called when the visualizer is turned off. Remove injected elements and restore state.
+- **cleanup(canvas, container, slot)** *(optional)* – called when the visualizer is turned off. Remove injected elements, dispose resources, and clear `container.visualizerState`.
+- **State**: Use `container.visualizerState` for any per-instance state (scene, renderer, etc.). Do NOT use module-level variables for instance-specific data—the same visualizer can be loaded multiple times in the manifest and each instance must work independently.
 
 Add the id to `manifest.json` to register it.
 

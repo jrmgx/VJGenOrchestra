@@ -2,53 +2,50 @@ const DEFAULT_VIDEO = "assets/videos/loops/loop-01.mp4";
 const BPM = 120;
 const BEAT_MS = 60000 / BPM;
 
-let video = null;
-let ready = false;
-let boostUntil = 0;
-
 function videoUrl(path) {
   return new URL("../../" + path, import.meta.url).href;
 }
 
-function ensureVideo(container, src) {
-  if (video && video.src.endsWith(src)) return;
-  if (video) {
-    video.pause();
-    video.src = "";
-    video.remove();
-    video = null;
-    ready = false;
+function ensureVideo(container, src, state) {
+  if (state.video && state.video.src.endsWith(src)) return;
+  if (state.video) {
+    state.video.pause();
+    state.video.src = "";
+    state.video.remove();
+    state.video = null;
+    state.ready = false;
   }
-  video = document.createElement("video");
-  video.loop = true;
-  video.preload = "auto";
-  video.muted = true;
-  video.playsInline = true;
-  video.style.cssText = "display:none;width:200px;height:160px";
-  video.src = videoUrl(src);
-  video.oncanplay = () => { ready = true; };
-  video.onerror = () => console.warn("videoclips: video failed to load", src);
-  container.appendChild(video);
-  video.load();
+  state.video = document.createElement("video");
+  state.video.loop = true;
+  state.video.preload = "auto";
+  state.video.muted = true;
+  state.video.playsInline = true;
+  state.video.style.cssText = "display:none;width:200px;height:160px";
+  state.video.src = videoUrl(src);
+  state.video.oncanplay = () => { state.ready = true; };
+  state.video.onerror = () => console.warn("videoclips: video failed to load", src);
+  container.appendChild(state.video);
+  state.video.load();
 }
 
 export function render(canvas, ctx, audio, container, options = {}) {
+  const state = container.visualizerState;
   const w = canvas.width;
   const h = canvas.height;
   const videoPath = options.video || DEFAULT_VIDEO;
-  ensureVideo(container, videoPath);
+  ensureVideo(container, videoPath, state);
 
-  if (!ready || !video) {
+  if (!state.ready || !state.video) {
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, w, h);
-    if (ready && video) video.play();
+    if (state.ready && state.video) state.video.play();
     return;
   }
 
-  const vw = video.videoWidth;
-  const vh = video.videoHeight;
+  const vw = state.video.videoWidth;
+  const vh = state.video.videoHeight;
   if (vw && vh) {
-    ctx.drawImage(video, 0, 0, vw, vh, 0, 0, w, h);
+    ctx.drawImage(state.video, 0, 0, vw, vh, 0, 0, w, h);
   }
 
   const bass = audio.bass ?? 0;
@@ -59,23 +56,25 @@ export function render(canvas, ctx, audio, container, options = {}) {
   const boostBeats = options.boostBeats ?? 0.5;
   const now = performance.now();
 
-  if (audio.kick) boostUntil = now + boostBeats * BEAT_MS;
+  if (audio.kick) state.boostUntil = now + boostBeats * BEAT_MS;
 
   const intensity = Math.abs(level - 0.5) * 2;
   const baseSpeed = Math.max(minSpeed, Math.min(maxSpeed, minSpeed + intensity * (maxSpeed - minSpeed)));
-  const speed = now < boostUntil ? maxSpeed : baseSpeed;
+  const speed = now < state.boostUntil ? maxSpeed : baseSpeed;
 
-  video.playbackRate = speed;
-  if (video.paused) video.play();
+  state.video.playbackRate = speed;
+  if (state.video.paused) state.video.play();
 }
 
-export function cleanup(canvas, container) {
-  if (video) {
-    video.pause();
-    video.src = "";
-    video.remove();
-    video = null;
+export function cleanup(canvas, container, slot) {
+  const state = container.visualizerState;
+  if (!state) return;
+  if (state.video) {
+    state.video.pause();
+    state.video.src = "";
+    state.video.remove();
+    state.video = null;
   }
-  ready = false;
-  boostUntil = 0;
+  state.ready = false;
+  state.boostUntil = 0;
 }

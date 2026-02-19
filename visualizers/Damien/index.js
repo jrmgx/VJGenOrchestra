@@ -1,9 +1,6 @@
 export const fileInputs = { bitmap: { accept: "image/*", label: "Choose image" } };
 
 let THREE = null;
-let scene, camera, renderer, modules, textureLoader;
-let initialized = false;
-let lastBitmapFile = null;
 
 const optionKeys = [
   "kickSphere",
@@ -31,7 +28,7 @@ const moduleConfigs = [
   { id: 10, name: "IMAGE BITMAP", type: "bitmap", color: 0xffffff },
 ];
 
-function createModule(cfg) {
+function createModule(cfg, state) {
   const group = new THREE.Group();
   group.visible = false;
 
@@ -111,33 +108,33 @@ function createModule(cfg) {
     group.userData.bitmapMat = mat;
   }
 
-  scene.add(group);
+  state.scene.add(group);
   return { group, type: cfg.type };
 }
 
-function initThree(container) {
-  textureLoader = new THREE.TextureLoader();
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(
+function initThree(container, state) {
+  state.textureLoader = new THREE.TextureLoader();
+  state.scene = new THREE.Scene();
+  state.camera = new THREE.PerspectiveCamera(
     75,
     container.clientWidth / container.clientHeight,
     0.1,
     1000
   );
-  camera.position.z = 12;
+  state.camera.position.z = 12;
 
-  renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(container.clientWidth, container.clientHeight);
-  container.appendChild(renderer.domElement);
+  state.renderer = new THREE.WebGLRenderer({ antialias: true });
+  state.renderer.setSize(container.clientWidth, container.clientHeight);
+  container.appendChild(state.renderer.domElement);
 
   const light = new THREE.DirectionalLight(0xffffff, 1);
   light.position.set(0, 0, 10);
-  scene.add(light);
-  scene.add(new THREE.AmbientLight(0x404040));
+  state.scene.add(light);
+  state.scene.add(new THREE.AmbientLight(0x404040));
 
-  modules = moduleConfigs.map((cfg) => createModule(cfg));
-  modules[0].group.visible = true;
-  initialized = true;
+  state.modules = moduleConfigs.map((cfg) => createModule(cfg, state));
+  state.modules[0].group.visible = true;
+  state.initialized = true;
 }
 
 export function render(canvas, ctx, audio, container, options = {}) {
@@ -146,26 +143,25 @@ export function render(canvas, ctx, audio, container, options = {}) {
     THREE = window.THREE;
   }
 
-  if (!initialized) {
-    initThree(container);
-  }
+  const state = container.visualizerState;
+  if (!state.initialized) initThree(container, state);
 
   const { width, height } = container.getBoundingClientRect();
-  if (renderer.domElement.width !== width || renderer.domElement.height !== height) {
-    renderer.setSize(width, height);
-    camera.aspect = width / height;
-    camera.updateProjectionMatrix();
+  if (state.renderer.domElement.width !== width || state.renderer.domElement.height !== height) {
+    state.renderer.setSize(width, height);
+    state.camera.aspect = width / height;
+    state.camera.updateProjectionMatrix();
   }
 
   optionKeys.forEach((key, i) => {
-    modules[i].group.visible = key in options ? !!options[key] : i === 0;
+    state.modules[i].group.visible = key in options ? !!options[key] : i === 0;
   });
 
-  const bitmapMod = modules.find((m) => m.type === "bitmap");
-  if (bitmapMod && options.bitmap instanceof File && options.bitmap !== lastBitmapFile) {
-    lastBitmapFile = options.bitmap;
+  const bitmapMod = state.modules.find((m) => m.type === "bitmap");
+  if (bitmapMod && options.bitmap instanceof File && options.bitmap !== state.lastBitmapFile) {
+    state.lastBitmapFile = options.bitmap;
     const url = URL.createObjectURL(options.bitmap);
-    textureLoader.load(url, (t) => {
+    state.textureLoader.load(url, (t) => {
       bitmapMod.group.userData.bitmapMat.map = t;
       bitmapMod.group.userData.bitmapMat.displacementMap = t;
       bitmapMod.group.userData.bitmapMat.needsUpdate = true;
@@ -177,7 +173,7 @@ export function render(canvas, ctx, audio, container, options = {}) {
   const mid = audio.mid ?? 0;
   const high = audio.high ?? 0;
 
-  modules.forEach((m) => {
+  state.modules.forEach((m) => {
     if (!m.group.visible) return;
 
     if (m.type === "sphere") {
@@ -214,19 +210,19 @@ export function render(canvas, ctx, audio, container, options = {}) {
   });
 
   if (bass > 0.9) {
-    camera.position.x = (Math.random() - 0.5) * 0.6;
-    camera.position.y = (Math.random() - 0.5) * 0.6;
+    state.camera.position.x = (Math.random() - 0.5) * 0.6;
+    state.camera.position.y = (Math.random() - 0.5) * 0.6;
   } else {
-    camera.position.lerp(new THREE.Vector3(0, 0, 12), 0.1);
+    state.camera.position.lerp(new THREE.Vector3(0, 0, 12), 0.1);
   }
 
-  renderer.render(scene, camera);
+  state.renderer.render(state.scene, state.camera);
 }
 
-export function cleanup(canvas, container) {
-  if (!initialized) return;
-  if (renderer?.domElement?.parentElement) container.removeChild(renderer.domElement);
-  scene?.clear();
-  initialized = false;
-  lastBitmapFile = null;
+export function cleanup(canvas, container, slot) {
+  const state = container.visualizerState;
+  if (!state?.initialized) return;
+  if (state.renderer?.domElement?.parentElement) container.removeChild(state.renderer.domElement);
+  state.scene?.clear();
+  Object.keys(state).forEach((k) => delete state[k]);
 }

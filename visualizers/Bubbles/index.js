@@ -3,22 +3,6 @@ const BOUNDS = { x: 4, y: 2.5, z: 0 };
 export const postProcess = true;
 
 let THREE = null;
-let scene, camera, renderer;
-let bubbles = [];
-let bubbleMaterial = null;
-let chainTexture = null;
-let overlayScene = null;
-let overlayCamera = null;
-let overlayMesh = null;
-let initialized = false;
-let quietFrames = 0;
-let lastBurstTime = 0;
-let kickPoint = null;
-let kickStrength = 0;
-let kickScatterCenter = null;
-let kickScatter = 0;
-let kickCenterPull = 0;
-let kickTowardPoint = false;
 
 const FRESNEL_VERTEX = `
 uniform float mRefractionRatio;
@@ -85,18 +69,18 @@ function makeBubbleMaterial(options) {
   });
 }
 
-function spawnBubble(options, group) {
+function spawnBubble(options, state, group) {
   const sizeMin = (options.sizeMin ?? 30) / 1000;
   const sizeMax = (options.sizeMax ?? 150) / 1000;
   const baseScale = sizeMin + Math.random() * Math.max(0, sizeMax - sizeMin);
   const geo = new THREE.SphereGeometry(1, 32, 32);
-  const mesh = new THREE.Mesh(geo, bubbleMaterial);
+  const mesh = new THREE.Mesh(geo, state.bubbleMaterial);
   mesh.position.set(
     (Math.random() - 0.5) * BOUNDS.x * 2,
     (Math.random() - 0.5) * BOUNDS.y * 2,
     (Math.random() - 0.5) * BOUNDS.z * 2
   );
-  scene.add(mesh);
+  state.scene.add(mesh);
   const angle = Math.random() * Math.PI * 2;
   const speed = 0.001 + Math.random() * 0.0025;
   const scalePhase = Math.random() * Math.PI * 2;
@@ -126,36 +110,37 @@ function spawnBubble(options, group) {
   };
 }
 
-function burstBubble(b, options) {
-  scene.remove(b.mesh);
+function burstBubble(b, options, state) {
+  state.scene.remove(b.mesh);
   b.mesh.geometry.dispose();
-  const replacement = spawnBubble(options, b.group);
-  const idx = bubbles.indexOf(b);
-  bubbles[idx] = replacement;
+  const replacement = spawnBubble(options, state, b.group);
+  const idx = state.bubbles.indexOf(b);
+  state.bubbles[idx] = replacement;
 }
 
-function initThree(container) {
-  scene = new THREE.Scene();
-  camera = new THREE.OrthographicCamera(-4, 4, 2.5, -2.5, 0.1, 100);
-  camera.position.z = 8;
-  camera.lookAt(0, 0, 0);
+function initThree(container, state) {
+  state.scene = new THREE.Scene();
+  state.camera = new THREE.OrthographicCamera(-4, 4, 2.5, -2.5, 0.1, 100);
+  state.camera.position.z = 8;
+  state.camera.lookAt(0, 0, 0);
 
-  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.setClearColor(0x000000, 1);
-  container.appendChild(renderer.domElement);
+  state.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  state.renderer.setSize(container.clientWidth, container.clientHeight);
+  state.renderer.setClearColor(0x000000, 1);
+  container.appendChild(state.renderer.domElement);
 
   const dir = new THREE.DirectionalLight(0xffffff, 1);
   dir.position.set(2, 2, 5);
-  scene.add(dir);
-  scene.add(new THREE.AmbientLight(0x404040));
+  state.scene.add(dir);
+  state.scene.add(new THREE.AmbientLight(0x404040));
   const point = new THREE.PointLight(0x88ccff, 0.5);
   point.position.set(-3, 2, 5);
-  scene.add(point);
+  state.scene.add(point);
 
-  bubbleMaterial = makeBubbleMaterial({});
-  overlayScene = new THREE.Scene();
-  overlayCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  state.bubbleMaterial = makeBubbleMaterial({});
+  state.bubbles = [];
+  state.overlayScene = new THREE.Scene();
+  state.overlayCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   const overlayGeo = new THREE.PlaneGeometry(2, 2);
   const overlayMat = new THREE.MeshBasicMaterial({
     map: null,
@@ -166,10 +151,12 @@ function initThree(container) {
     blendSrc: THREE.OneFactor,
     blendDst: THREE.OneFactor,
   });
-  overlayMesh = new THREE.Mesh(overlayGeo, overlayMat);
-  overlayMesh.position.z = -0.5;
-  overlayScene.add(overlayMesh);
-  initialized = true;
+  state.overlayMesh = new THREE.Mesh(overlayGeo, overlayMat);
+  state.overlayMesh.position.z = -0.5;
+  state.overlayScene.add(state.overlayMesh);
+  state.quietFrames = 0;
+  state.lastBurstTime = 0;
+  state.initialized = true;
 }
 
 export function render(canvas, ctx, audio, container, options = {}, engine, chainCanvas) {
@@ -178,45 +165,46 @@ export function render(canvas, ctx, audio, container, options = {}, engine, chai
     THREE = window.THREE;
   }
 
-  if (!initialized) initThree(container);
+  const state = container.visualizerState;
+  if (!state.initialized) initThree(container, state);
 
   if (chainCanvas?.width && chainCanvas?.height) {
-    if (!chainTexture) {
-      chainTexture = new THREE.CanvasTexture(chainCanvas);
-      chainTexture.generateMipmaps = false;
-      chainTexture.minFilter = THREE.LinearFilter;
-      chainTexture.magFilter = THREE.LinearFilter;
-      bubbleMaterial.uniforms.tEnv.value = chainTexture;
+    if (!state.chainTexture) {
+      state.chainTexture = new THREE.CanvasTexture(chainCanvas);
+      state.chainTexture.generateMipmaps = false;
+      state.chainTexture.minFilter = THREE.LinearFilter;
+      state.chainTexture.magFilter = THREE.LinearFilter;
+      state.bubbleMaterial.uniforms.tEnv.value = state.chainTexture;
     }
-    chainTexture.needsUpdate = true;
+    state.chainTexture.needsUpdate = true;
   }
 
   const ratio = options.refractionRatio ?? 1.02;
   const bias = options.fresnelBias ?? 0.1;
   const power = options.fresnelPower ?? 2.0;
   const scale = options.fresnelScale ?? 1.0;
-  bubbleMaterial.uniforms.mRefractionRatio.value = ratio;
-  bubbleMaterial.uniforms.mFresnelBias.value = bias;
-  bubbleMaterial.uniforms.mFresnelPower.value = power;
-  bubbleMaterial.uniforms.mFresnelScale.value = scale;
+  state.bubbleMaterial.uniforms.mRefractionRatio.value = ratio;
+  state.bubbleMaterial.uniforms.mFresnelBias.value = bias;
+  state.bubbleMaterial.uniforms.mFresnelPower.value = power;
+  state.bubbleMaterial.uniforms.mFresnelScale.value = scale;
 
   const count = Math.max(100, Math.min(1000, options.count ?? 100));
-  while (bubbles.length < count) bubbles.push(spawnBubble(options));
-  while (bubbles.length > count) {
-    const b = bubbles.pop();
-    scene.remove(b.mesh);
+  while (state.bubbles.length < count) state.bubbles.push(spawnBubble(options, state));
+  while (state.bubbles.length > count) {
+    const b = state.bubbles.pop();
+    state.scene.remove(b.mesh);
     b.mesh.geometry.dispose();
   }
 
   const { width, height } = container.getBoundingClientRect();
-  if (renderer.domElement.width !== width || renderer.domElement.height !== height) {
-    renderer.setSize(width, height);
+  if (state.renderer.domElement.width !== width || state.renderer.domElement.height !== height) {
+    state.renderer.setSize(width, height);
     const aspect = width / height;
-    camera.left = -4 * aspect;
-    camera.right = 4 * aspect;
-    camera.top = 2.5;
-    camera.bottom = -2.5;
-    camera.updateProjectionMatrix();
+    state.camera.left = -4 * aspect;
+    state.camera.right = 4 * aspect;
+    state.camera.top = 2.5;
+    state.camera.bottom = -2.5;
+    state.camera.updateProjectionMatrix();
   }
 
   const bass = audio.bass ?? 0;
@@ -224,52 +212,52 @@ export function render(canvas, ctx, audio, container, options = {}, engine, chai
   const high = audio.high ?? 0;
   const kick = audio.kick === 1;
   const energy = bass + mid + high;
-  if (energy < 0.15) quietFrames++;
-  else quietFrames = 0;
+  if (energy < 0.15) state.quietFrames++;
+  else state.quietFrames = 0;
 
   if (kick && bass > 0.5) {
-    kickTowardPoint = !kickTowardPoint;
-    if (kickTowardPoint) {
-      kickPoint = null;
-      kickScatterCenter = null;
-      kickScatter = 0;
-      kickCenterPull = 0;
+    state.kickTowardPoint = !state.kickTowardPoint;
+    if (state.kickTowardPoint) {
+      state.kickPoint = null;
+      state.kickScatterCenter = null;
+      state.kickScatter = 0;
+      state.kickCenterPull = 0;
       const edge = Math.floor(Math.random() * 4);
-      if (edge === 0) kickPoint = { x: (Math.random() - 0.5) * BOUNDS.x * 2, y: BOUNDS.y };
-      else if (edge === 1) kickPoint = { x: (Math.random() - 0.5) * BOUNDS.x * 2, y: -BOUNDS.y };
-      else if (edge === 2) kickPoint = { x: -BOUNDS.x, y: (Math.random() - 0.5) * BOUNDS.y * 2 };
-      else kickPoint = { x: BOUNDS.x, y: (Math.random() - 0.5) * BOUNDS.y * 2 };
-      kickStrength = 0.0025 * (0.5 + bass);
-    } else if (bubbles.length > 0) {
-      kickPoint = null;
-      kickStrength = 0;
+      if (edge === 0) state.kickPoint = { x: (Math.random() - 0.5) * BOUNDS.x * 2, y: BOUNDS.y };
+      else if (edge === 1) state.kickPoint = { x: (Math.random() - 0.5) * BOUNDS.x * 2, y: -BOUNDS.y };
+      else if (edge === 2) state.kickPoint = { x: -BOUNDS.x, y: (Math.random() - 0.5) * BOUNDS.y * 2 };
+      else state.kickPoint = { x: BOUNDS.x, y: (Math.random() - 0.5) * BOUNDS.y * 2 };
+      state.kickStrength = 0.0025 * (0.5 + bass);
+    } else if (state.bubbles.length > 0) {
+      state.kickPoint = null;
+      state.kickStrength = 0;
       let cx = 0, cy = 0;
-      for (const b of bubbles) {
+      for (const b of state.bubbles) {
         cx += b.mesh.position.x;
         cy += b.mesh.position.y;
       }
-      kickScatterCenter = { x: cx / bubbles.length, y: cy / bubbles.length };
-      kickScatter = 0.0018 * (0.5 + bass);
-      kickCenterPull = 0.0012 * (0.5 + bass);
+      state.kickScatterCenter = { x: cx / state.bubbles.length, y: cy / state.bubbles.length };
+      state.kickScatter = 0.0018 * (0.5 + bass);
+      state.kickCenterPull = 0.0012 * (0.5 + bass);
     }
   }
-  kickStrength *= 0.96;
-  kickScatter *= 0.96;
-  kickCenterPull *= 0.96;
+  state.kickStrength *= 0.96;
+  state.kickScatter *= 0.96;
+  state.kickCenterPull *= 0.96;
 
-  if (quietFrames > 60 && Date.now() - lastBurstTime > 2000) {
-    if (bubbles.length > 0) {
-      burstBubble(bubbles[Math.floor(Math.random() * bubbles.length)], options);
-      lastBurstTime = Date.now();
+  if (state.quietFrames > 60 && Date.now() - state.lastBurstTime > 2000) {
+    if (state.bubbles.length > 0) {
+      burstBubble(state.bubbles[Math.floor(Math.random() * state.bubbles.length)], options, state);
+      state.lastBurstTime = Date.now();
     }
-  } else if (Math.random() < 0.001 && bubbles.length > 0) {
-    burstBubble(bubbles[Math.floor(Math.random() * bubbles.length)], options);
+  } else if (Math.random() < 0.001 && state.bubbles.length > 0) {
+    burstBubble(state.bubbles[Math.floor(Math.random() * state.bubbles.length)], options, state);
   }
 
   const t = performance.now() * 0.001;
   const speedMul = (options.speed ?? 1) * (0.5 + energy * 0.3);
 
-  for (const b of bubbles) {
+  for (const b of state.bubbles) {
     const vx = b.velocity.x, vy = b.velocity.y;
     const vLen = Math.sqrt(vx * vx + vy * vy) || 0.001;
     const perpX = -vy / vLen, perpY = vx / vLen;
@@ -280,23 +268,23 @@ export function render(canvas, ctx, audio, container, options = {}, engine, chai
     b.velocity.x += (Math.random() - 0.5) * turb;
     b.velocity.y += (Math.random() - 0.5) * turb;
     const kr = b.kickResponse;
-    if (kickPoint && kickStrength > 0.0001) {
-      const dx = kickPoint.x - b.mesh.position.x;
-      const dy = kickPoint.y - b.mesh.position.y;
+    if (state.kickPoint && state.kickStrength > 0.0001) {
+      const dx = state.kickPoint.x - b.mesh.position.x;
+      const dy = state.kickPoint.y - b.mesh.position.y;
       const d = Math.sqrt(dx * dx + dy * dy) || 1;
-      const s = kickStrength * speedMul * 0.5 * kr;
+      const s = state.kickStrength * speedMul * 0.5 * kr;
       b.velocity.x += (dx / d) * s;
       b.velocity.y += (dy / d) * s;
-    } else if (kickScatterCenter && (kickScatter > 0.0001 || kickCenterPull > 0.0001)) {
+    } else if (state.kickScatterCenter && (state.kickScatter > 0.0001 || state.kickCenterPull > 0.0001)) {
       const px = b.mesh.position.x, py = b.mesh.position.y;
-      const dxAway = px - kickScatterCenter.x;
-      const dyAway = py - kickScatterCenter.y;
+      const dxAway = px - state.kickScatterCenter.x;
+      const dyAway = py - state.kickScatterCenter.y;
       const dAway = Math.sqrt(dxAway * dxAway + dyAway * dyAway) || 1;
-      const sAway = kickScatter * speedMul * 0.5 * kr;
+      const sAway = state.kickScatter * speedMul * 0.5 * kr;
       b.velocity.x += (dxAway / dAway) * sAway;
       b.velocity.y += (dyAway / dAway) * sAway;
       const dCenter = Math.sqrt(px * px + py * py) || 1;
-      const sCenter = kickCenterPull * speedMul * 0.5 * kr;
+      const sCenter = state.kickCenterPull * speedMul * 0.5 * kr;
       b.velocity.x -= (px / dCenter) * sCenter;
       b.velocity.y -= (py / dCenter) * sCenter;
     }
@@ -321,10 +309,10 @@ export function render(canvas, ctx, audio, container, options = {}, engine, chai
   }
 
   const toBurst = [];
-  for (let i = 0; i < bubbles.length; i++) {
-    const a = bubbles[i];
-    for (let j = i + 1; j < bubbles.length; j++) {
-      const b = bubbles[j];
+  for (let i = 0; i < state.bubbles.length; i++) {
+    const a = state.bubbles[i];
+    for (let j = i + 1; j < state.bubbles.length; j++) {
+      const b = state.bubbles[j];
       if (a.group !== b.group) continue;
       const dx = b.mesh.position.x - a.mesh.position.x;
       const dy = b.mesh.position.y - a.mesh.position.y;
@@ -352,43 +340,44 @@ export function render(canvas, ctx, audio, container, options = {}, engine, chai
     }
     if (a.collisionCount >= a.burstThreshold) toBurst.push(a);
   }
-  for (const b of toBurst) burstBubble(b, options);
+  for (const b of toBurst) burstBubble(b, options, state);
 
   const w = BOUNDS.x * 2, h = BOUNDS.y * 2;
-  for (const b of bubbles) {
+  for (const b of state.bubbles) {
     if (b.mesh.position.x < -BOUNDS.x) b.mesh.position.x += w;
     else if (b.mesh.position.x > BOUNDS.x) b.mesh.position.x -= w;
     if (b.mesh.position.y < -BOUNDS.y) b.mesh.position.y += h;
     else if (b.mesh.position.y > BOUNDS.y) b.mesh.position.y -= h;
   }
 
-  renderer.render(scene, camera);
-  if (options.showTexture && chainTexture) {
-    overlayMesh.material.map = chainTexture;
-    overlayMesh.material.visible = true;
-    renderer.autoClear = false;
-    renderer.render(overlayScene, overlayCamera);
-    renderer.autoClear = true;
+  state.renderer.render(state.scene, state.camera);
+  if (options.showTexture && state.chainTexture) {
+    state.overlayMesh.material.map = state.chainTexture;
+    state.overlayMesh.material.visible = true;
+    state.renderer.autoClear = false;
+    state.renderer.render(state.overlayScene, state.overlayCamera);
+    state.renderer.autoClear = true;
   }
 }
 
-export function cleanup(canvas, container) {
-  if (!initialized) return;
-  for (const b of bubbles) {
-    scene.remove(b.mesh);
+export function cleanup(canvas, container, slot) {
+  const state = container.visualizerState;
+  if (!state?.initialized) return;
+  for (const b of state.bubbles) {
+    state.scene.remove(b.mesh);
     b.mesh.geometry.dispose();
   }
-  bubbles = [];
-  bubbleMaterial?.dispose();
-  bubbleMaterial = null;
-  chainTexture?.dispose();
-  chainTexture = null;
-  overlayMesh?.geometry?.dispose();
-  overlayMesh?.material?.dispose();
-  overlayMesh = null;
-  overlayScene = null;
-  overlayCamera = null;
-  if (renderer?.domElement?.parentElement) container.removeChild(renderer.domElement);
-  scene?.clear();
-  initialized = false;
+  state.bubbles = [];
+  state.bubbleMaterial?.dispose();
+  state.bubbleMaterial = null;
+  state.chainTexture?.dispose();
+  state.chainTexture = null;
+  state.overlayMesh?.geometry?.dispose();
+  state.overlayMesh?.material?.dispose();
+  state.overlayMesh = null;
+  state.overlayScene = null;
+  state.overlayCamera = null;
+  if (state.renderer?.domElement?.parentElement) container.removeChild(state.renderer.domElement);
+  state.scene?.clear();
+  Object.keys(state).forEach((k) => delete state[k]);
 }

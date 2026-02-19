@@ -99,7 +99,7 @@ function setupOptionsListeners(slot, optionsContainer, contentContainer) {
       input.type = "file";
       input.accept = cfg.accept || "*";
       input.style.display = "none";
-      input.id = `file-${slot.effect.id}-${key}`;
+      input.id = `file-slot-${slot.effectIndex}-${key}`;
       input.addEventListener("change", () => {
         slot.fileInputValues[key] = input.files?.[0] ?? null;
         update();
@@ -223,16 +223,26 @@ startBtn.addEventListener("click", async () => {
 
   const { canvas: mainCanvas, ctx: mainCtx, resize: resizeMain } = createMainCanvas(mainWrapper);
 
+  const idCounts = {};
+  effects.forEach((e) => { idCounts[e.id] = (idCounts[e.id] || 0) + 1; });
+  const idIndex = {};
+  effects.forEach((e, i) => {
+    idIndex[i] = idCounts[e.id] > 1 ? (idIndex[e.id] = (idIndex[e.id] ?? 0) + 1) : 0;
+  });
+
   const slots = effects.map((effect, effectIndex) => {
     const { canvas, ctx, resize } = createOffscreenCanvas();
     const container = document.createElement("div");
     container.style.cssText = "position:absolute;inset:0;width:100%;height:100%";
+    container.visualizerState = {};
     container.appendChild(canvas);
     offscreenLayer.appendChild(container);
 
+    const displayName = idIndex[effectIndex] ? `${effect.name} (${idIndex[effectIndex]})` : effect.name;
     let active = false;
 
     return {
+      displayName,
       effect,
       effectIndex,
       container,
@@ -357,7 +367,7 @@ startBtn.addEventListener("click", async () => {
     const header = document.createElement("div");
     header.className = "options-section-header";
     if (slot.effect.optionsUrl) {
-      header.textContent = slot.effect.name;
+      header.textContent = slot.displayName;
       header.addEventListener("click", () => {
         section.classList.toggle("collapsed");
         if (!section.classList.contains("collapsed")) {
@@ -381,7 +391,7 @@ startBtn.addEventListener("click", async () => {
       section.appendChild(content);
     } else {
       section.classList.add("no-options");
-      header.textContent = `${slot.effect.name} has no options`;
+      header.textContent = `${slot.displayName} has no options`;
       section.appendChild(header);
     }
     return section;
@@ -436,12 +446,12 @@ startBtn.addEventListener("click", async () => {
     handle.title = "Drag to reorder";
     handle.textContent = "⋮⋮";
     btn.appendChild(handle);
-    btn.appendChild(document.createTextNode(effect.name));
+    btn.appendChild(document.createTextNode(slot.displayName));
     btn.addEventListener("click", () => {
       const willActivate = !slot.active;
       if (!willActivate) {
         if (slot.effect.cleanup) {
-          slot.effect.cleanup(slot.canvas, slot.container);
+          slot.effect.cleanup(slot.canvas, slot.container, slot);
         }
         if (slot.optionsSection) {
           slot.optionsSection.remove();

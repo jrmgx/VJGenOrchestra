@@ -1,7 +1,4 @@
 let THREE = null;
-let renderer, composer, texturePass, effectPass, texture;
-let initialized = false;
-let initPromise = null;
 const CDN = "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/postprocessing";
 
 const KaleidoscopeShader = {
@@ -59,7 +56,7 @@ class TexturePass {
   }
 }
 
-function init(container) {
+function init(container, state) {
   return (async () => {
     THREE = window.THREE;
     if (!THREE) return false;
@@ -70,21 +67,21 @@ function init(container) {
     ]);
 
     const { width, height } = container.getBoundingClientRect();
-    renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
-    renderer.setSize(width, height);
-    renderer.setClearColor(0x000000, 0);
-    container.appendChild(renderer.domElement);
+    state.renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
+    state.renderer.setSize(width, height);
+    state.renderer.setClearColor(0x000000, 0);
+    container.appendChild(state.renderer.domElement);
 
-    texture = new THREE.CanvasTexture(document.createElement("canvas"));
-    texturePass = new TexturePass(texture);
-    texturePass.init(THREE);
+    state.texture = new THREE.CanvasTexture(document.createElement("canvas"));
+    state.texturePass = new TexturePass(state.texture);
+    state.texturePass.init(THREE);
 
-    composer = new EffectComposer(renderer);
-    composer.addPass(texturePass);
-    effectPass = new ShaderPass(KaleidoscopeShader);
-    composer.addPass(effectPass);
+    state.composer = new EffectComposer(state.renderer);
+    state.composer.addPass(state.texturePass);
+    state.effectPass = new ShaderPass(KaleidoscopeShader);
+    state.composer.addPass(state.effectPass);
 
-    initialized = true;
+    state.initialized = true;
     return true;
   })();
 }
@@ -95,8 +92,9 @@ export function render(canvas, ctx, audio, container, options = {}, engine, sour
   if (!THREE) THREE = window.THREE;
   if (!THREE) return;
 
-  if (!initialized) {
-    if (!initPromise) initPromise = init(container);
+  const state = container.visualizerState;
+  if (!state.initialized) {
+    if (!state.initPromise) state.initPromise = init(container, state);
     return;
   }
 
@@ -104,14 +102,14 @@ export function render(canvas, ctx, audio, container, options = {}, engine, sour
   if (!width || !height) return;
 
   if (!sourceCanvas || sourceCanvas.width === 0 || sourceCanvas.height === 0) {
-    renderer.setClearColor(0x000000, 0);
-    renderer.setRenderTarget(null);
-    renderer.clear();
+    state.renderer.setClearColor(0x000000, 0);
+    state.renderer.setRenderTarget(null);
+    state.renderer.clear();
     return;
   }
 
-  texture.image = sourceCanvas;
-  texture.needsUpdate = true;
+  state.texture.image = sourceCanvas;
+  state.texture.needsUpdate = true;
 
   const baseSegments = options.segments ?? 6;
   let segments = baseSegments;
@@ -123,21 +121,21 @@ export function render(canvas, ctx, audio, container, options = {}, engine, sour
     const kickBoost = audio.kick ? 3 : 0;
     segments = baseSegments + level * 2 + kickBoost;
   }
-  effectPass.uniforms.segments.value = Math.max(2, Math.round(segments));
+  state.effectPass.uniforms.segments.value = Math.max(2, Math.round(segments));
 
-  if (renderer.domElement.width !== width || renderer.domElement.height !== height) {
-    renderer.setSize(width, height);
-    composer.setSize(width, height);
-    composer.setPixelRatio(1);
+  if (state.renderer.domElement.width !== width || state.renderer.domElement.height !== height) {
+    state.renderer.setSize(width, height);
+    state.composer.setSize(width, height);
+    state.composer.setPixelRatio(1);
   }
 
-  composer.render();
+  state.composer.render();
 }
 
-export function cleanup(canvas, container) {
-  if (!initialized) return;
-  texture?.dispose();
-  if (renderer?.domElement?.parentElement) container.removeChild(renderer.domElement);
-  initialized = false;
-  initPromise = null;
+export function cleanup(canvas, container, slot) {
+  const state = container.visualizerState;
+  if (!state?.initialized) return;
+  state.texture?.dispose();
+  if (state.renderer?.domElement?.parentElement) container.removeChild(state.renderer.domElement);
+  Object.keys(state).forEach((k) => delete state[k]);
 }

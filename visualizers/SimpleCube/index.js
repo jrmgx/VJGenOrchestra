@@ -1,27 +1,25 @@
 let THREE = null;
-let scene, camera, renderer, cube, cubeMat;
-let initialized = false;
 
-function initThree(container) {
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(
+function initThree(container, state) {
+  state.scene = new THREE.Scene();
+  state.camera = new THREE.PerspectiveCamera(
     75,
     container.clientWidth / container.clientHeight,
     0.1,
     1000
   );
-  camera.position.z = 5;
+  state.camera.position.z = 5;
 
-  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.setClearColor(0x000000, 0);
-  container.appendChild(renderer.domElement);
+  state.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  state.renderer.setSize(container.clientWidth, container.clientHeight);
+  state.renderer.setClearColor(0x000000, 0);
+  container.appendChild(state.renderer.domElement);
 
-  cubeMat = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.5, 1.5), cubeMat);
-  scene.add(mesh);
-  cube = mesh;
-  initialized = true;
+  state.cubeMat = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.5, 1.5), state.cubeMat);
+  state.scene.add(mesh);
+  state.cube = mesh;
+  state.initialized = true;
 }
 
 export const postProcess = true;
@@ -32,25 +30,24 @@ export function render(canvas, ctx, audio, container, options = {}, engine, sour
     THREE = window.THREE;
   }
 
-  if (!initialized) {
-    initThree(container);
-  }
+  const state = container.visualizerState;
+  if (!state.initialized) initThree(container, state);
 
   const { width, height } = container.getBoundingClientRect();
-  if (renderer.domElement.width !== width || renderer.domElement.height !== height) {
-    renderer.setSize(width, height);
-    camera.aspect = width / height;
-    camera.updateProjectionMatrix();
+  if (state.renderer.domElement.width !== width || state.renderer.domElement.height !== height) {
+    state.renderer.setSize(width, height);
+    state.camera.aspect = width / height;
+    state.camera.updateProjectionMatrix();
   }
 
   if (sourceCanvas && sourceCanvas.width > 0 && sourceCanvas.height > 0) {
-    if (!cubeMat.map) cubeMat.map = new THREE.CanvasTexture(sourceCanvas);
-    else cubeMat.map.image = sourceCanvas;
-    cubeMat.map.needsUpdate = true;
-    cubeMat.color.setHex(0xffffff);
+    if (!state.cubeMat.map) state.cubeMat.map = new THREE.CanvasTexture(sourceCanvas);
+    else state.cubeMat.map.image = sourceCanvas;
+    state.cubeMat.map.needsUpdate = true;
+    state.cubeMat.color.setHex(0xffffff);
   } else {
-    cubeMat.map = null;
-    cubeMat.color.setHex(0xffffff);
+    state.cubeMat.map = null;
+    state.cubeMat.color.setHex(0xffffff);
   }
 
   const bass = audio.bass ?? 0;
@@ -60,7 +57,7 @@ export function render(canvas, ctx, audio, container, options = {}, engine, sour
   const sizePercent = (options.size ?? 90) / 100;
   const visibleHeight = 2 * 5 * Math.tan((75 * Math.PI) / 360);
   const baseSize = 1.5;
-  cube.scale.setScalar((sizePercent * visibleHeight) / baseSize);
+  state.cube.scale.setScalar((sizePercent * visibleHeight) / baseSize);
 
   const baseSpeed = 0.01;
   const speed = baseSpeed + (bass + mid + high) * 0.04;
@@ -68,17 +65,18 @@ export function render(canvas, ctx, audio, container, options = {}, engine, sour
   const dirY = (high - mid) * 2;
   const dirZ = bass - 0.5;
 
-  cube.rotation.x += speed * dirX;
-  cube.rotation.y += speed * dirY;
-  cube.rotation.z += speed * dirZ;
+  state.cube.rotation.x += speed * dirX;
+  state.cube.rotation.y += speed * dirY;
+  state.cube.rotation.z += speed * dirZ;
 
-  renderer.render(scene, camera);
+  state.renderer.render(state.scene, state.camera);
 }
 
-export function cleanup(canvas, container) {
-  if (!initialized) return;
-  if (renderer?.domElement?.parentElement) container.removeChild(renderer.domElement);
-  cubeMat?.dispose();
-  scene?.clear();
-  initialized = false;
+export function cleanup(canvas, container, slot) {
+  const state = container.visualizerState;
+  if (!state?.initialized) return;
+  if (state.renderer?.domElement?.parentElement) container.removeChild(state.renderer.domElement);
+  state.cubeMat?.dispose();
+  state.scene?.clear();
+  Object.keys(state).forEach((k) => delete state[k]);
 }
