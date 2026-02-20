@@ -60,6 +60,7 @@ function extractOptions(doc) {
     const key = el.name || el.id;
     if (!key) continue;
     if (el.type === "checkbox") options[key] = el.checked;
+    else if (el.type === "radio") { if (el.checked) options[key] = el.value; }
     else if (el.type === "file") options[key] = el.files?.[0] ?? null;
     else if (el.type === "number" || el.type === "range")
       options[key] = parseFloat(el.value) || 0;
@@ -78,6 +79,7 @@ function applyOptions(doc, options) {
     const v = options[key];
     if (el.type === "file") continue;
     if (el.type === "checkbox") el.checked = !!v;
+    else if (el.type === "radio") el.checked = el.value === v;
     else if (el.type === "number" || el.type === "range") el.value = String(v);
     else el.value = v;
   }
@@ -313,7 +315,7 @@ startBtn.addEventListener("click", async () => {
     if (out?.width && out?.height) mainCtx.drawImage(out, 0, 0, w, h);
   }
 
-  const engine = { text: "" };
+  const engine = {};
   let lastTime = performance.now();
   const fpsSamples = [];
 
@@ -327,8 +329,6 @@ startBtn.addEventListener("click", async () => {
     bottomPanel.updateFps(fps);
 
     if (width && height) {
-      engine.text = bottomPanel.getText();
-
       resizeMain(width, height);
       mainCtx.fillStyle = blend.base === "white" ? "#fff" : "#000";
       mainCtx.fillRect(0, 0, width, height);

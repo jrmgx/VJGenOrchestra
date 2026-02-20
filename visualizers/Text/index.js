@@ -24,7 +24,7 @@ function findFontSize(ctx, lines, w, h, fontFamily, bold) {
 }
 
 export function render(canvas, ctx, audio, container, options = {}, engine = {}) {
-  const text = engine.text ?? "";
+  const text = options.text ?? "";
   const w = canvas.width;
   const h = canvas.height;
   if (!w || !h) return;
@@ -36,8 +36,10 @@ export function render(canvas, ctx, audio, container, options = {}, engine = {})
   ctx.clearRect(0, 0, w, h);
   if (!text) return;
 
+  const pad = 0.05;
+  const innerW = w * (1 - pad * 2);
   const lines = text.split("\n");
-  const fontSize = findFontSize(ctx, lines, w, h, fontFamily, bold);
+  const fontSize = findFontSize(ctx, lines, innerW, h, fontFamily, bold);
   ctx.font = `${bold ? "bold " : ""}${fontSize}px ${fontFamily}`;
   ctx.fillStyle = color;
   ctx.textAlign = "center";
@@ -45,7 +47,7 @@ export function render(canvas, ctx, audio, container, options = {}, engine = {})
 
   const lineHeight = fontSize * 1.2;
   const totalHeight = lines.length * lineHeight;
-  let y = (h - totalHeight) / 2 + lineHeight / 2;
+  let y = h / 2 - totalHeight / 2 + lineHeight / 2;
 
   for (const line of lines) {
     ctx.fillText(line, w / 2, y);

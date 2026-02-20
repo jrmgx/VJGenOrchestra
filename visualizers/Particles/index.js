@@ -248,23 +248,24 @@ export function render(canvas, ctx, audio, container, options = {}, engine = {})
   const spreadMul = (options.spread ?? 150) / 100;
   const transitionMs = (options.transitionMs ?? 2500);
   const particleType = options.particleType ?? "bubble";
-  const engineText = engine?.text ?? "";
+  const emojiText = (options.emoji ?? "🙂").trim() || "🙂";
 
   const needsTextureUpdate =
     particleType !== state.lastParticleType ||
-    (particleType === "text" && engineText !== state.lastEngineText);
+    (particleType === "text" && emojiText !== state.lastEmojiText);
 
   if (needsTextureUpdate && state.material) {
     state.lastParticleType = particleType;
-    state.lastEngineText = engineText;
+    state.lastEmojiText = emojiText;
     state.particleTexture?.dispose();
     if (particleType === "text") {
-      state.particleTexture = createTextTexture(engineText);
+      state.particleTexture = createTextTexture(emojiText);
       state.material.uniforms.map.value = state.particleTexture;
     } else {
       state.particleTexture = createParticleTexture();
       state.material.uniforms.map.value = state.particleTexture;
-      const url = ASSETS_BASE + (particleType === "orbs" ? "orbs.png" : "bubble.png");
+      const filename = particleType === "orbs" ? "orbs.png" : particleType === "bubble_apple" ? "bubble_apple.png" : "bubble.png";
+      const url = ASSETS_BASE + filename;
       loadImageTexture(url, (tex) => {
         state.particleTexture?.dispose();
         state.particleTexture = tex;

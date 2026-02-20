@@ -91,16 +91,10 @@ export function createBottomPanel(audio, analyser, container = document.body) {
     input.addEventListener("change", saveOnChange);
   });
 
-  const textInput = document.createElement("textarea");
-  textInput.className = "text-input";
-  textInput.placeholder = "Type text for visualizers…";
-  textInput.rows = 2;
-
   const content = document.createElement("div");
   content.className = "bottom-panel-content";
   content.appendChild(vizArea);
   content.appendChild(sliders);
-  content.appendChild(textInput);
 
   const fpsEl = document.createElement("span");
   fpsEl.className = "fps-display";
@@ -131,10 +125,6 @@ export function createBottomPanel(audio, analyser, container = document.body) {
       kickDiff: num(inputs.kickDiff, defaults.kickDiff),
       kickFrames: num(inputs.kickFrames, defaults.kickFrames),
     };
-  }
-
-  function getText() {
-    return textInput.value;
   }
 
   function updateFps(value) {
@@ -210,5 +200,5 @@ export function createBottomPanel(audio, analyser, container = document.body) {
     kickLed.classList.toggle("active", !!audio.kick);
   }
 
-  return { getOptions, getText, draw, updateFps };
+  return { getOptions, draw, updateFps };
 }

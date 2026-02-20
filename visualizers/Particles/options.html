@@ -13,6 +13,7 @@
   <label>Particle type</label>
   <div class="particle-selector" id="particleSelector"></div>
   <input type="hidden" name="particleType" id="particleInput" value="bubble">
+  <label>Emoji <input type="text" name="emoji" value="🙂" placeholder="🙂"></label>
   <label>Count <input type="range" name="count" min="200" max="8000" step="100" value="889"></label>
   <label>Speed <input type="range" name="speed" min="0" max="3" step="0.1" value="1"></label>
   <label>Size <input type="range" name="size" min="50" max="400" value="200"></label>
@@ -25,8 +26,9 @@
   const base = new URL(".", document.baseURI).href;
   const types = [
     { id: "bubble", label: "Bubble", img: "../../assets/textures/bubble.png" },
+    { id: "bubble_apple", label: "Bubble Apple", img: "../../assets/textures/bubble_apple.png" },
     { id: "orbs", label: "Orbs", img: "../../assets/textures/orbs.png" },
-    { id: "text", label: "🙂", img: null }
+    { id: "text", label: "Text", img: null }
   ];
 
   function syncSelection() {

@@ -41,10 +41,10 @@ export const fileInputs = {
 ### Step by step instructions
 
  - Convert this standalone visualizer in `[DIR]` to work with VJGenOrchestra.
- - Create `visualizers/[id]/index.js` that exports `render(canvas, ctx, audio, container, options, engine)` and optionally `cleanup(canvas, container, slot)`. The engine object provides `engine.text` (text from the bottom panel) for visualizers that need it.
+ - Create `visualizers/[id]/index.js` that exports `render(canvas, ctx, audio, container, options, engine)` and optionally `cleanup(canvas, container, slot)`.
  - Replace their audio setup with the passed `audio` (use `audio.getByteFrequencyData()` or `audio.analyser.getByteTimeDomainData()`).
  - Replace their `requestAnimationFrame` loop—the engine calls `render` each frame.
  - For custom canvases (e.g. Three.js), inject into `container` instead of `document.body`.
  - **State**: Store per-instance state (scene, renderer, etc.) in `container.visualizerState`. Do NOT use module-level variables—the same visualizer can appear multiple times in the manifest and each instance must work independently. In `cleanup`, clear `container.visualizerState` and dispose resources.
  - Move UI controls (toggles, sliders) to `options.html` with `name`/`id` on inputs; values arrive as `options`. For file inputs, use the `fileInputs` export instead.
- - Add the id to `manifest.json`. See `visualizers/SimpleBar`, `SimpleCube`, `glb3d` for reference.
+ - Add the id to `manifest.json`. See `visualizers/SimpleBar`, `SimpleShapes`, `glb3d` for reference.

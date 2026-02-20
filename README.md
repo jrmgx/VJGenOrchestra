@@ -37,7 +37,7 @@ Iterate on your own as much as you need and when ready you can integrate it easi
 Do not add multiple effects into one visualizer, work on one concept and push it to its limit.
 The goal is to have multiple visualizers combined in the engine.
 
-The engine exposes pre-filtered audio values (kick, bass, mid, high), live kick detection, text input and more to come.
+The engine exposes pre-filtered audio values (kick, bass, mid, high), live kick detection and more to come.
 
 Do not add too many options: maybe you can use some options when developing your visualizer to find the sweet spot for specific values
 and remove the options in the final version letting your value hardcoded.

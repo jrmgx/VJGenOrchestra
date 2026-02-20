@@ -136,25 +136,3 @@
   min-width: 60px;
   accent-color: #4a4a4a;
 }
-
-#bottom-panel .text-input {
-  flex: 1 1 0;
-  min-width: 120px;
-  max-width: 400px;
-  padding: 0.4rem 0.6rem;
-  background: #1a1a1a;
-  color: #fff;
-  border: 1px solid #333;
-  border-radius: var(--radius, 4px);
-  font-size: 0.85rem;
-  font-family: inherit;
-  resize: none;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-#bottom-panel .text-input::-webkit-scrollbar {
-  display: none;
-}
-#bottom-panel .text-input::placeholder {
-  color: #666;
-}

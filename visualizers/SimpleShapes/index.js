@@ -1,5 +1,18 @@
 let THREE = null;
 
+const MESH_TYPES = {
+  cube: () => new THREE.BoxGeometry(1.5, 1.5, 1.5),
+  sphere: () => new THREE.SphereGeometry(0.75, 32, 32),
+  cylinder: () => new THREE.CylinderGeometry(0.5, 0.5, 1.5, 32),
+};
+
+function createMesh(type, material) {
+  const geometry = MESH_TYPES[type]();
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.userData.geometry = geometry;
+  return mesh;
+}
+
 function initThree(container, state) {
   state.scene = new THREE.Scene();
   state.camera = new THREE.PerspectiveCamera(
@@ -15,11 +28,20 @@ function initThree(container, state) {
   state.renderer.setClearColor(0x000000, 0);
   container.appendChild(state.renderer.domElement);
 
-  state.cubeMat = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.5, 1.5), state.cubeMat);
-  state.scene.add(mesh);
-  state.cube = mesh;
+  state.mat = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
+  state.currentType = "cube";
+  state.mesh = createMesh("cube", state.mat);
+  state.scene.add(state.mesh);
   state.initialized = true;
+}
+
+function setMeshType(state, type) {
+  if (state.currentType === type) return;
+  state.currentType = type;
+  state.scene.remove(state.mesh);
+  state.mesh.userData.geometry?.dispose();
+  state.mesh = createMesh(type, state.mat);
+  state.scene.add(state.mesh);
 }
 
 export const postProcess = true;
@@ -33,6 +55,9 @@ export function render(canvas, ctx, audio, container, options = {}, engine, sour
   const state = container.visualizerState;
   if (!state.initialized) initThree(container, state);
 
+  const meshType = options.meshType ?? "cube";
+  setMeshType(state, meshType);
+
   const { width, height } = container.getBoundingClientRect();
   if (state.renderer.domElement.width !== width || state.renderer.domElement.height !== height) {
     state.renderer.setSize(width, height);
@@ -41,13 +66,13 @@ export function render(canvas, ctx, audio, container, options = {}, engine, sour
   }
 
   if (sourceCanvas && sourceCanvas.width > 0 && sourceCanvas.height > 0) {
-    if (!state.cubeMat.map) state.cubeMat.map = new THREE.CanvasTexture(sourceCanvas);
-    else state.cubeMat.map.image = sourceCanvas;
-    state.cubeMat.map.needsUpdate = true;
-    state.cubeMat.color.setHex(0xffffff);
+    if (!state.mat.map) state.mat.map = new THREE.CanvasTexture(sourceCanvas);
+    else state.mat.map.image = sourceCanvas;
+    state.mat.map.needsUpdate = true;
+    state.mat.color.setHex(0xffffff);
   } else {
-    state.cubeMat.map = null;
-    state.cubeMat.color.setHex(0xffffff);
+    state.mat.map = null;
+    state.mat.color.setHex(0xffffff);
   }
 
   const bass = audio.bass ?? 0;
@@ -57,7 +82,7 @@ export function render(canvas, ctx, audio, container, options = {}, engine, sour
   const sizePercent = (options.size ?? 90) / 100;
   const visibleHeight = 2 * 5 * Math.tan((75 * Math.PI) / 360);
   const baseSize = 1.5;
-  state.cube.scale.setScalar((sizePercent * visibleHeight) / baseSize);
+  state.mesh.scale.setScalar((sizePercent * visibleHeight) / baseSize);
 
   const baseSpeed = 0.01;
   const speed = baseSpeed + (bass + mid + high) * 0.04;
@@ -65,9 +90,9 @@ export function render(canvas, ctx, audio, container, options = {}, engine, sour
   const dirY = (high - mid) * 2;
   const dirZ = bass - 0.5;
 
-  state.cube.rotation.x += speed * dirX;
-  state.cube.rotation.y += speed * dirY;
-  state.cube.rotation.z += speed * dirZ;
+  state.mesh.rotation.x += speed * dirX;
+  state.mesh.rotation.y += speed * dirY;
+  state.mesh.rotation.z += speed * dirZ;
 
   state.renderer.render(state.scene, state.camera);
 }
@@ -76,7 +101,8 @@ export function cleanup(canvas, container, slot) {
   const state = container.visualizerState;
   if (!state?.initialized) return;
   if (state.renderer?.domElement?.parentElement) container.removeChild(state.renderer.domElement);
-  state.cubeMat?.dispose();
+  state.mesh?.userData?.geometry?.dispose();
+  state.mat?.dispose();
   state.scene?.clear();
   Object.keys(state).forEach((k) => delete state[k]);
 }

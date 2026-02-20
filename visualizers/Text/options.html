@@ -1,7 +1,22 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"></head>
+<head><meta charset="utf-8">
+<style>
+  .text-option { display: flex; align-items: flex-start; gap: 0.5rem; }
+  .text-option span { flex-shrink: 0; }
+  .text-option textarea {
+    flex: 1;
+    min-width: 0;
+    background: #1a1a1a;
+    color: #fff;
+    border: 1px solid #333;
+    padding: 0.4rem;
+    font: inherit;
+  }
+</style>
+</head>
 <body>
+  <label class="text-option"><span>Text</span><textarea name="text" rows="3" placeholder="Type text…"></textarea></label>
   <label>Color <input type="color" name="color" value="#ffffff"></label>
   <label>Font <select name="font">
     <option value="sans-serif" selected>Sans-serif</option>
