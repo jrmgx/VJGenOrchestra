@@ -26,8 +26,8 @@ function runPipeline(sourceCanvas, options, canvas, ctx, state) {
         const bitmap = await createImageBitmap(corrupted);
         if (state.cachedImage) state.cachedImage.close?.();
         state.cachedImage = bitmap;
-      } catch (e) {
-        console.warn("Glitch pipeline error:", e);
+      } catch {
+        // InvalidStateError: source image could not be decoded – corrupted JPEG can be too broken
       } finally {
         state.pipelineInFlight = false;
       }
@@ -51,15 +51,19 @@ export function render(canvas, ctx, audio, container, options = {}, engine, sour
 
   const iterations = Math.max(0, options.iterations ?? 3);
   if (iterations === 0) {
-    ctx.drawImage(sourceCanvas, 0, 0, width, height);
+    try {
+      ctx.drawImage(sourceCanvas, 0, 0, width, height);
+    } catch {}
     return;
   }
 
-  if (state.cachedImage) {
-    ctx.drawImage(state.cachedImage, 0, 0, width, height);
-  } else {
-    ctx.drawImage(sourceCanvas, 0, 0, width, height);
-  }
+  try {
+    if (state.cachedImage) {
+      ctx.drawImage(state.cachedImage, 0, 0, width, height);
+    } else {
+      ctx.drawImage(sourceCanvas, 0, 0, width, height);
+    }
+  } catch {}
 
   runPipeline(sourceCanvas, { ...options, audio }, canvas, ctx, state);
 }
