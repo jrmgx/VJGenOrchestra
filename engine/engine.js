@@ -249,6 +249,15 @@ startBtn.addEventListener("click", async () => {
   const buttonsRow = document.createElement("div");
   buttonsRow.className = "options-panel-buttons";
 
+  const fpsEl = document.createElement("button");
+  fpsEl.id = "fps-counter";
+  fpsEl.type = "button";
+  fpsEl.title = "Frame rate";
+  fpsEl.textContent = "— fps";
+  fpsEl.style.pointerEvents = "none";
+  fpsEl.style.cursor = "default";
+  buttonsRow.appendChild(fpsEl);
+
   const fullscreenBtn = document.createElement("button");
   fullscreenBtn.id = "fullscreen-toggle";
   fullscreenBtn.type = "button";
@@ -506,7 +515,16 @@ startBtn.addEventListener("click", async () => {
     }
   }
 
+  let fpsUpdateTime = performance.now();
+  let fpsFrameCount = 0;
   function loop() {
+    const now = performance.now();
+    fpsFrameCount++;
+    if (now - fpsUpdateTime >= 500) {
+      fpsEl.textContent = Math.round((fpsFrameCount * 1000) / (now - fpsUpdateTime)) + " fps";
+      fpsFrameCount = 0;
+      fpsUpdateTime = now;
+    }
     if (width && height) {
       resizeMain(width, height);
       mainCtx.fillStyle = blend.base === "white" ? "#fff" : "#000";

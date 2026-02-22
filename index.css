@@ -116,6 +116,7 @@ html, body {
   display: flex;
   gap: 0.5rem;
 }
+#fps-counter,
 #fullscreen-toggle {
   padding: 0.5rem 0.75rem;
   background: var(--bg-dark);
@@ -128,6 +129,9 @@ html, body {
 #fullscreen-toggle:hover {
   background: #252525;
   border-color: #444;
+}
+#fps-counter:hover {
+  background: var(--bg-dark);
 }
 #options-toggle {
   padding: 0.5rem 1rem;
