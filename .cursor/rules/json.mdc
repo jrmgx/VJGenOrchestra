@@ -1,0 +1,6 @@
+---
+globs: *.json
+alwaysApply: false
+---
+
+Always pretty format json for human readability

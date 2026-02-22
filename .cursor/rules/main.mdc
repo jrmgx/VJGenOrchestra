@@ -12,6 +12,7 @@ This project is already in advanced development stage so:
 
 IMPORTANT:
  - Do not be too verbose in you code.
+ - Never remove attribution links.
  - Find the root cause of bugs, do not try workarounds.
  - Do not implement defensive code by default, keep everything simple.
  - Always double check if your new code can be refactored with existing code.
