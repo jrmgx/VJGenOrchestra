@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body>
+  <div>Metaball inspired from <a href="https://niklasknaack.de/">Niklas Knaack</a></div>
+  <label>Count <input type="range" name="count" min="5" max="15" step="1" value="8"></label>
+  <label>Speed <input type="range" name="speed" min="0.25" max="2" step="0.05" value="1"></label>
+  <label><input type="checkbox" name="reactiveSpeed" checked> Reactive speed</label>
+  <label>Audio reactivity <input type="range" name="audioReactivity" min="0" max="1" step="0.05" value="0.3"></label>
+  <label>Color scheme
+    <input type="hidden" name="colorScheme" value="ocean" id="colorScheme">
+    <span class="color-scheme-btns"></span>
+  </label>
+  <label><input type="checkbox" name="colorReverse"> Reverse colors</label>
+  <label><input type="checkbox" name="colorReactive"> Reactive colors</label>
+  <script>
+    (function() {
+      var schemes = {
+        ocean: [[0,130,175],[88,179,156],[234,207,0],[237,85,32],[30,24,41]],
+        fire: [[30,24,41],[168,29,27],[236,143,2],[255,200,150],[200,30,10]],
+        forest: [[15,25,20],[90,140,70],[200,235,140],[95,120,55],[40,55,28]],
+        ice: [[10,15,35],[110,170,200],[240,250,255],[80,150,200],[45,100,160]],
+        sunset: [[25,15,35],[220,90,140],[255,230,150],[240,80,90],[140,35,80]]
+      };
+      var input = document.getElementById('colorScheme');
+      var container = document.querySelector('.color-scheme-btns');
+      function toRgb(c) { return 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')'; }
+      function gradient(colors) {
+        var stops = colors.map(function(c, i) {
+          return toRgb(c) + ' ' + (i * 100 / (colors.length - 1)) + '%';
+        }).join(',');
+        return 'linear-gradient(to right,' + stops + ')';
+      }
+      function syncButtons() {
+        container.querySelectorAll('button').forEach(function(btn) {
+          btn.style.opacity = btn.dataset.scheme === input.value ? '1' : '0.5';
+          btn.style.outline = btn.dataset.scheme === input.value ? '2px solid black' : 'none';
+        });
+      }
+      Object.keys(schemes).forEach(function(id) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.dataset.scheme = id;
+        btn.title = id.charAt(0).toUpperCase() + id.slice(1);
+        btn.style.cssText = 'width:32px;height:20px;margin:0 2px 0 0;padding:0;border:1px solid #333;border-radius:3px;background:' + gradient(schemes[id]) + ';cursor:pointer';
+        btn.addEventListener('click', function() {
+          input.value = id;
+          syncButtons();
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        container.appendChild(btn);
+      });
+      document.addEventListener('optionsApplied', syncButtons);
+      syncButtons();
+    })();
+  </script>
+</body>
+</html>
