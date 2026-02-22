@@ -1,6 +1,17 @@
 ---
 globs: *.json
-alwaysApply: false
+alwaysApply: true
 ---
 
 Always pretty format json for human readability
+example:
+```json
+["entry", "entry"]
+```
+would be
+```json
+[
+    "entry",
+    "entry"
+]
+```
