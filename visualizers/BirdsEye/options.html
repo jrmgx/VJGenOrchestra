@@ -5,22 +5,22 @@
   <div>Birds Eye from <a href="https://niklasknaack.de/">Niklas Knaack</a></div>
   <label>Mode
     <input type="hidden" name="mode" value="city" id="mode">
-    <button type="button" data-mode="city" title="City">🏢</button>
-    <button type="button" data-mode="forest" title="Forest">🌲</button>
+    <button type="button" data-value="city" title="City">🏢</button>
+    <button type="button" data-value="forest" title="Forest">🌲</button>
   </label>
   <label>Speed <input type="range" name="speed" min="0.5" max="2" step="0.1" value="1"></label>
   <script>
     (function() {
       var input = document.getElementById('mode');
-      var btns = document.querySelectorAll('button[data-mode]');
+      var btns = document.querySelectorAll('button[data-value]');
       function syncButtons() {
         btns.forEach(function(btn) {
-          btn.style.opacity = btn.dataset.mode === input.value ? '1' : '0.5';
+          btn.style.opacity = btn.dataset.value === input.value ? '1' : '0.5';
         });
       }
       btns.forEach(function(btn) {
         btn.addEventListener('click', function() {
-          input.value = btn.dataset.mode;
+          input.value = btn.dataset.value;
           syncButtons();
           input.dispatchEvent(new Event('change', { bubbles: true }));
         });

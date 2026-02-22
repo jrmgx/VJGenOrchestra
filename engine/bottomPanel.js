@@ -20,38 +20,27 @@ function saveOptions(opts) {
   } catch {}
 }
 
-export function createBottomPanel(audio, analyser, container = document.body) {
+export async function createBottomPanel(audio, analyser, container = document.body, opts = {}) {
+  const { effects = [] } = opts;
+
   const link = document.createElement("link");
   link.rel = "stylesheet";
   link.href = new URL("bottomPanel.css", import.meta.url).href;
   document.head.appendChild(link);
 
-  const panel = document.createElement("div");
-  panel.id = "bottom-panel";
+  const htmlUrl = new URL("bottomPanel.html", import.meta.url).href;
+  const html = await fetch(htmlUrl + "?t=" + Date.now()).then((r) => r.text());
+  const wrap = document.createElement("div");
+  wrap.innerHTML = html.trim();
+  const panel = wrap.firstElementChild;
+  container.appendChild(panel);
 
-  const vizArea = document.createElement("div");
-  vizArea.className = "viz-area";
-
-  const canvas = document.createElement("canvas");
-  canvas.width = 200;
-  canvas.height = 56;
-  canvas.title = "Bass | Mid | High bars. Red/green line = min level. Bottom strip = bass rise (orange line = min rise)";
-
-  const kickLedWrap = document.createElement("div");
-  kickLedWrap.className = "kick-led-wrap";
-  const kickLed = document.createElement("div");
-  kickLed.className = "kick-led";
-  kickLed.title = "Kick detected";
-  const kickLabel = document.createElement("small");
-  kickLabel.textContent = "Kick";
-  kickLedWrap.appendChild(kickLed);
-  kickLedWrap.appendChild(kickLabel);
-
-  vizArea.appendChild(canvas);
-  vizArea.appendChild(kickLedWrap);
-
-  const sliders = document.createElement("div");
-  sliders.className = "sliders";
+  const canvas = panel.querySelector("#bottom-panel-canvas");
+  const kickLed = panel.querySelector(".kick-led");
+  const toggleBtn = panel.querySelector(".bottom-panel-toggle");
+  const automixCheck = panel.querySelector("#automix-check");
+  const vizSelect = panel.querySelector("#automix-viz-select");
+  const postSelect = panel.querySelector("#automix-post-select");
 
   const defaults = { kickThreshold: 0.2, kickDiff: 0.15, kickFrames: 5 };
   const saved = loadSavedOptions();
@@ -60,30 +49,15 @@ export function createBottomPanel(audio, analyser, container = document.body) {
     if (typeof s !== "number" || isNaN(s)) return def;
     return Math.max(min, Math.min(max, s));
   };
-  const sliderConfig = [
-    ["kickThreshold", 0, 1, 0.01, val("kickThreshold", 0.2, 0, 1), "Min level", "Ignore kicks below this bass level. Filters out noise."],
-    ["kickDiff", 0, 0.5, 0.01, val("kickDiff", 0.15, 0, 0.5), "Min rise", "How much bass must jump in one frame to trigger. Lower = more sensitive."],
-    ["kickFrames", 1, 15, 1, val("kickFrames", 5, 1, 15), "Hold time", "How long the kick stays on (in frames). Longer = visualizers react longer."],
-  ];
-  const inputs = {};
-  for (const [name, min, max, step, value, labelText, tooltip] of sliderConfig) {
-    const label = document.createElement("label");
-    label.title = tooltip;
-    const span = document.createElement("span");
-    span.textContent = labelText;
-    const input = document.createElement("input");
-    input.type = "range";
-    input.name = name;
-    input.min = min;
-    input.max = max;
-    input.step = step;
-    input.value = value;
-    input.title = tooltip;
-    label.appendChild(span);
-    label.appendChild(input);
-    sliders.appendChild(label);
-    inputs[name] = input;
-  }
+
+  const inputs = {
+    kickThreshold: panel.querySelector('input[name="kickThreshold"]'),
+    kickDiff: panel.querySelector('input[name="kickDiff"]'),
+    kickFrames: panel.querySelector('input[name="kickFrames"]'),
+  };
+  inputs.kickThreshold.value = val("kickThreshold", 0.2, 0, 1);
+  inputs.kickDiff.value = val("kickDiff", 0.15, 0, 0.5);
+  inputs.kickFrames.value = val("kickFrames", 5, 1, 15);
 
   const saveOnChange = () => saveOptions(getOptions());
   Object.values(inputs).forEach((input) => {
@@ -91,29 +65,35 @@ export function createBottomPanel(audio, analyser, container = document.body) {
     input.addEventListener("change", saveOnChange);
   });
 
-  const content = document.createElement("div");
-  content.className = "bottom-panel-content";
-  content.appendChild(vizArea);
-  content.appendChild(sliders);
+  const visualizers = effects.filter((e) => !e.postProcess);
+  const postProcessors = effects.filter((e) => e.postProcess);
+  visualizers.forEach((e) => {
+    const opt = document.createElement("option");
+    opt.value = e.id;
+    opt.textContent = e.name;
+    vizSelect.appendChild(opt);
+  });
+  postProcessors.forEach((e) => {
+    const opt = document.createElement("option");
+    opt.value = e.id;
+    opt.textContent = e.name;
+    postSelect.appendChild(opt);
+  });
 
-  const fpsEl = document.createElement("span");
-  fpsEl.className = "fps-display";
-  fpsEl.textContent = "—";
-
-  const toggleBtn = document.createElement("button");
-  toggleBtn.className = "bottom-panel-toggle";
-  toggleBtn.type = "button";
-  toggleBtn.title = "Show/hide panel";
-  toggleBtn.textContent = "▼";
   toggleBtn.addEventListener("click", () => {
     panel.classList.toggle("collapsed");
     toggleBtn.textContent = panel.classList.contains("collapsed") ? "▲" : "▼";
   });
 
-  panel.appendChild(toggleBtn);
-  panel.appendChild(content);
-  panel.appendChild(fpsEl);
-  container.appendChild(panel);
+  function getAutomixState() {
+    const vizSelected = [...vizSelect.selectedOptions].map((o) => o.value);
+    const postSelected = [...postSelect.selectedOptions].map((o) => o.value);
+    return {
+      enabled: automixCheck.checked,
+      visualizerIds: vizSelected,
+      postProcessorIds: postSelected,
+    };
+  }
 
   function getOptions() {
     const num = (input, def) => {
@@ -125,10 +105,6 @@ export function createBottomPanel(audio, analyser, container = document.body) {
       kickDiff: num(inputs.kickDiff, defaults.kickDiff),
       kickFrames: num(inputs.kickFrames, defaults.kickFrames),
     };
-  }
-
-  function updateFps(value) {
-    fpsEl.textContent = value ? value + " FPS" : "—";
   }
 
   function draw() {
@@ -200,5 +176,5 @@ export function createBottomPanel(audio, analyser, container = document.body) {
     kickLed.classList.toggle("active", !!audio.kick);
   }
 
-  return { getOptions, draw, updateFps };
+  return { getOptions, draw, getAutomixState };
 }

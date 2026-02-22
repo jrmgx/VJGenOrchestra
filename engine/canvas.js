@@ -1,6 +1,6 @@
 export function createOffscreenCanvas() {
   const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d", { alpha: true });
+  const ctx = canvas.getContext("2d", { alpha: true, willReadFrequently: true });
 
   function resize(width, height) {
     if (canvas.width !== width || canvas.height !== height) {
@@ -14,7 +14,7 @@ export function createOffscreenCanvas() {
 
 export function createMainCanvas(container) {
   const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d", { alpha: true });
+  const ctx = canvas.getContext("2d", { alpha: true, willReadFrequently: true });
   container.appendChild(canvas);
 
   function resize(width, height) {

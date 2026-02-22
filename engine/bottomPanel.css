@@ -7,7 +7,6 @@
   display: flex;
   align-items: center;
   gap: 1.25rem;
-  padding: 0.6rem 1rem;
   background: rgba(12, 12, 12, 0.95);
   border-top: 1px solid #333;
   color: #e0e0e0;
@@ -16,7 +15,7 @@
 }
 
 #bottom-panel.collapsed .bottom-panel-content,
-#bottom-panel.collapsed .fps-display {
+#bottom-panel.collapsed .automix-section {
   display: none;
 }
 
@@ -27,11 +26,46 @@
   border: none;
 }
 
-#bottom-panel .fps-display {
+#bottom-panel .automix-section {
   margin-left: auto;
+  padding: 0 1rem 0 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  align-self: stretch;
+}
+
+#bottom-panel .automix-section #automix-check {
+  accent-color: #4a4a4a;
+  cursor: pointer;
+}
+
+#bottom-panel .automix-section #automix-check + label {
+  cursor: pointer;
   font-weight: 600;
-  color: #666;
-  font-size: 0.75rem;
+  color: #888;
+}
+
+#bottom-panel .automix-section select[multiple] {
+  height: 100%;
+  min-height: 4em;
+  min-width: 100px;
+  padding: 0.25rem;
+  background: #1a1a1a;
+  color: #e0e0e0;
+  border: 1px solid #444;
+  border-radius: var(--radius, 4px);
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+#bottom-panel .automix-section select[multiple] option {
+  padding: 0.15rem 0.25rem;
+}
+
+#bottom-panel .automix-section select[multiple] option:checked {
+  background: #333;
 }
 
 #bottom-panel .bottom-panel-toggle {
@@ -60,6 +94,7 @@
   align-items: center;
   gap: 1.25rem;
   min-width: 0;
+  padding: 0.9rem 0 0.9rem 1rem;
 }
 
 #bottom-panel .viz-area {

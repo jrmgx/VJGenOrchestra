@@ -23,6 +23,25 @@ To get a working visualizer please follow these instructions:
  - Post-processors: export `postProcess: true` and receive the current composite as 7th param: `render(canvas, ctx, audio, container, options, engine, sourceCanvas)`. Use sourceCanvas as texture/source. Your output replaces all previous layers on the main canvas; the chain then continues with normal merging for visualizers after you. Example: A, B, post C, D → C receives A+B merged, C replaces them, final = C+D merged.
  - Options: add `options.html` in your visualizer folder. Use `name` or `id` on inputs for keys. Values are passed as `options` (5th param). Example: `<input type="range" name="speed" min="0" max="2" value="1">` → `options.speed`. The engine injects `engine/options.css` for shared styles (transparent bg, sans-serif bold black text, label as block).
 
+### Custom option groups (hidden + buttons)
+
+For pick-one-from-many options (e.g. color scheme, mode, shape), use a hidden input plus buttons with `data-value`:
+
+```html
+<label>Mode
+  <input type="hidden" name="mode" value="city" id="mode">
+  <button type="button" data-value="city" title="City">🏢</button>
+  <button type="button" data-value="forest" title="Forest">🌲</button>
+</label>
+```
+
+- The hidden input holds the selected value; use `name` for the options key.
+- Each button has `data-value="<value>"` — the engine detects these for automix schema extraction.
+- Container: the hidden input must be inside a `label` or a `div` that also contains the buttons (so the engine finds them via `closest("label") || parentElement`).
+- On click: set `input.value = btn.dataset.value`, dispatch `change`, and sync button state (opacity, selected class).
+- Listen for `optionsApplied` to sync when options are set programmatically (e.g. automix).
+- For dynamically created buttons (from a list), use `btn.dataset.value = item.id` (or path, etc.). See Metaball, VideoClips, Particles, BirdsEye, WrapTunnel.
+
 ### File inputs
 
 File inputs must NOT be in `options.html` (they cannot pass `File` objects across iframe boundaries). Instead, export `fileInputs` from your visualizer:

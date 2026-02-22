@@ -232,7 +232,7 @@ function createRoofTexture(colorWall, w, h, numRows, numCols) {
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
-  const context = canvas.getContext('2d');
+  const context = canvas.getContext('2d', { willReadFrequently: true });
   const imageData = context.getImageData(0, 0, width, height);
   const data = imageData.data;
   for (let i = 0; i < data.length; i += 4) {
@@ -274,7 +274,7 @@ function createWallTexture(textureType, colorWall, colorWindows, windowRatio, re
   const canvas = document.createElement('canvas');
   canvas.width = w;
   canvas.height = h;
-  const context = canvas.getContext('2d');
+  const context = canvas.getContext('2d', { willReadFrequently: true });
   const rgbWall = `rgb(${colorWall.r}, ${colorWall.g}, ${colorWall.b})`;
   const rgbWindows = `rgb(${colorWindows.r}, ${colorWindows.g}, ${colorWindows.b})`;
   context.fillStyle = rgbWall;
@@ -369,7 +369,7 @@ function createStreetTexture(textureType, w, h) {
   const canvas = document.createElement('canvas');
   canvas.width = w;
   canvas.height = h;
-  const context = canvas.getContext('2d');
+  const context = canvas.getContext('2d', { willReadFrequently: true });
   const imageData = context.getImageData(0, 0, w, h);
   const data = imageData.data;
   for (let i = 0; i < data.length; i += 4) {

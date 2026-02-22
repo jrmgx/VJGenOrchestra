@@ -131,17 +131,14 @@ function loadImageTexture(url, callback) {
 }
 
 function initThree(container, state) {
+  const w = Math.max(1, container.clientWidth || 1);
+  const h = Math.max(1, container.clientHeight || 1);
   state.scene = new THREE.Scene();
-  state.camera = new THREE.PerspectiveCamera(
-    75,
-    container.clientWidth / container.clientHeight,
-    0.1,
-    100
-  );
+  state.camera = new THREE.PerspectiveCamera(75, w / h, 0.1, 100);
   state.camera.position.z = 4;
 
   state.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  state.renderer.setSize(container.clientWidth, container.clientHeight);
+  state.renderer.setSize(w, h);
   state.renderer.setClearColor(0x000000, 0);
   container.appendChild(state.renderer.domElement);
 
@@ -230,9 +227,11 @@ export function render(canvas, ctx, audio, container, options = {}, engine = {})
   }
 
   const { width, height } = container.getBoundingClientRect();
-  if (state.renderer.domElement.width !== width || state.renderer.domElement.height !== height) {
-    state.renderer.setSize(width, height);
-    state.camera.aspect = width / height;
+  const safeW = Math.max(1, width || 1);
+  const safeH = Math.max(1, height || 1);
+  if (state.renderer.domElement.width !== safeW || state.renderer.domElement.height !== safeH) {
+    state.renderer.setSize(safeW, safeH);
+    state.camera.aspect = safeW / safeH;
     state.camera.updateProjectionMatrix();
   }
 
@@ -242,10 +241,11 @@ export function render(canvas, ctx, audio, container, options = {}, engine = {})
   const kick = audio.kick === 1;
   const energy = bass + mid + high;
 
-  const count = Math.max(1, Math.min(MAX_COUNT, Math.round(options.count ?? 889)));
-  const speed = (options.speed ?? 1) * (0.1 + energy * 0.17);
-  const sizeMul = (options.size ?? 200) / 100 * (0.7 + bass * 0.6);
-  const spreadMul = (options.spread ?? 150) / 100;
+  const count = Math.max(1, Math.min(MAX_COUNT, Math.round(Number(options.count) || 889)));
+  const s = (Number(options.speed) || 1) * (0.1 + (Number.isFinite(energy) ? energy : 0) * 0.17);
+  const speed = Number.isFinite(s) ? s : 0.1;
+  const sizeMul = ((Number(options.size) || 200) / 100) * (0.7 + bass * 0.6);
+  const spreadMul = (Number(options.spread) || 150) / 100;
   const transitionMs = (options.transitionMs ?? 2500);
   const particleType = options.particleType ?? "bubble";
   const emojiText = (options.emoji ?? "🙂").trim() || "🙂";
@@ -313,9 +313,15 @@ export function render(canvas, ctx, audio, container, options = {}, engine = {})
 
   const spread = 3 * spreadMul;
   for (let i = 0; i < count; i++) {
-    posAttr.array[i * 3] += state.velocities[i * 3] * speed;
-    posAttr.array[i * 3 + 1] += state.velocities[i * 3 + 1] * speed;
-    posAttr.array[i * 3 + 2] += state.velocities[i * 3 + 2] * speed;
+    let x = posAttr.array[i * 3], y = posAttr.array[i * 3 + 1], z = posAttr.array[i * 3 + 2];
+    if (!Number.isFinite(x + y + z)) {
+      x = (Math.random() - 0.5) * spread * 2;
+      y = (Math.random() - 0.5) * spread * 2;
+      z = (Math.random() - 0.5) * spread * 2;
+    }
+    posAttr.array[i * 3] = x + state.velocities[i * 3] * speed;
+    posAttr.array[i * 3 + 1] = y + state.velocities[i * 3 + 1] * speed;
+    posAttr.array[i * 3 + 2] = z + state.velocities[i * 3 + 2] * speed;
 
     state.velocities[i * 3] *= 0.98;
     state.velocities[i * 3 + 1] *= 0.98;

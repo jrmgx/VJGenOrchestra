@@ -7,6 +7,72 @@ const startBtn = document.querySelector("#start");
 const app = document.querySelector("#app");
 const controls = document.querySelector("#controls");
 
+function extractOptionsSchema(doc, fileInputKeys = []) {
+  const schema = {};
+  for (const el of doc.querySelectorAll("input, select, textarea")) {
+    const key = el.name || el.id;
+    if (!key || fileInputKeys.includes(key)) continue;
+    if (el.type === "file") continue;
+    if (el.type === "range" || el.type === "number") {
+      const min = parseFloat(el.getAttribute("min")) ?? 0;
+      const max = parseFloat(el.getAttribute("max")) ?? 1;
+      const step = parseFloat(el.getAttribute("step")) ?? 0.01;
+      schema[key] = { type: el.type, min, max, step };
+    } else if (el.type === "checkbox") {
+      schema[key] = { type: "checkbox" };
+    } else if (el.type === "radio") {
+      const name = el.name;
+      if (!(name in schema)) {
+        const opts = [...doc.querySelectorAll(`input[type="radio"][name="${name}"]`)].map((r) => r.value);
+        schema[name] = { type: "radio", options: opts };
+      }
+    } else if (el.type === "color") {
+      schema[key] = { type: "color" };
+    } else if (el.type === "hidden") {
+      const container = el.closest("label") || el.parentElement;
+      const values = [];
+      if (container) {
+        for (const btn of container.querySelectorAll("[data-value]")) {
+          const v = btn.dataset.value;
+          if (v != null && v !== "") values.push(String(v));
+        }
+      }
+      if (values.length) schema[key] = { type: "hidden", options: values };
+      else schema[key] = { type: "hidden", options: [el.value || ""] };
+    } else if (el.tagName === "SELECT") {
+      const opts = [...el.querySelectorAll("option")].map((o) => o.value);
+      schema[key] = { type: "select", options: opts };
+    } else {
+      schema[key] = { type: "text", value: el.value };
+    }
+  }
+  return schema;
+}
+
+function generateRandomOptions(schema, fileInputKeys = [], fileInputValues = {}) {
+  const opts = { ...fileInputValues };
+  for (const [key, s] of Object.entries(schema || {})) {
+    if (fileInputKeys.includes(key)) continue;
+    if (key in fileInputValues) continue;
+    if (s.type === "range" || s.type === "number") {
+      const { min, max, step } = s;
+      const steps = Math.round((max - min) / step);
+      const v = min + Math.round(Math.random() * steps) * step;
+      opts[key] = Math.min(max, v);
+    } else if (s.type === "checkbox") {
+      opts[key] = Math.random() > 0.5;
+    } else if (s.type === "radio" || s.type === "select" || s.type === "hidden") {
+      const options = s.options || [];
+      opts[key] = options[Math.floor(Math.random() * options.length)] ?? "";
+    } else if (s.type === "color") {
+      opts[key] = "#" + Math.floor(Math.random() * 16777215).toString(16).padStart(6, "0");
+    } else if (s.type === "text") {
+      opts[key] = s.value ?? "";
+    }
+  }
+  return opts;
+}
+
 const BLEND_MODES = [
   { label: "Normal", value: "source-over", base: "black" },
   { label: "Multiply", value: "multiply", base: "white" },
@@ -23,6 +89,26 @@ const BLEND_MODES = [
   { label: "Exclusion", value: "exclusion", base: "black" },
 ];
 
+function loadSchemaFromOptionsUrl(optionsUrl, fileInputKeys) {
+  return new Promise((resolve) => {
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText = "position:absolute;left:-9999px;width:1px;height:1px;visibility:hidden";
+    document.body.appendChild(iframe);
+    iframe.onload = () => {
+      try {
+        const doc = iframe.contentDocument;
+        const schema = doc ? extractOptionsSchema(doc, fileInputKeys || []) : {};
+        resolve(schema);
+      } catch {
+        resolve({});
+      } finally {
+        iframe.remove();
+      }
+    };
+    iframe.src = optionsUrl;
+  });
+}
+
 async function loadEffects() {
   const manifestUrl = new URL("../visualizers/manifest.json", import.meta.url);
   const ids = await fetch(manifestUrl + "?t=" + Date.now()).then((r) => r.json());
@@ -35,6 +121,12 @@ async function loadEffects() {
           fetch(new URL(`${id}/options.html`, baseUrl).href).catch(() => null),
         ]);
         const optionsUrl = new URL(`${id}/options.html`, baseUrl).href;
+        const fileInputKeys = Object.keys(mod.fileInputs || {});
+        let optionsSchema = {};
+        if (optionsRes?.ok) {
+          optionsSchema = await loadSchemaFromOptionsUrl(optionsUrl, fileInputKeys);
+          console.log(`[automix] ${id} options:`, optionsSchema);
+        }
         return {
           id,
           name: id,
@@ -43,6 +135,7 @@ async function loadEffects() {
           optionsUrl: optionsRes?.ok ? optionsUrl : null,
           postProcess: !!mod.postProcess,
           fileInputs: mod.fileInputs || null,
+          optionsSchema,
         };
       } catch (e) {
         console.error(`Failed to load visualizer "${id}":`, e);
@@ -147,7 +240,7 @@ startBtn.addEventListener("click", async () => {
 
   const [effects, { analyser }] = await Promise.all([loadEffects(), startMic()]);
   const audio = createAudio(analyser);
-  const bottomPanel = createBottomPanel(audio, analyser, app);
+  const bottomPanel = await createBottomPanel(audio, analyser, app, { effects });
 
   const optionsPanel = document.createElement("div");
   optionsPanel.id = "options-panel";
@@ -316,18 +409,104 @@ startBtn.addEventListener("click", async () => {
   }
 
   const engine = {};
-  let lastTime = performance.now();
-  const fpsSamples = [];
+  const AUTOMIX_COOLDOWN_MS = 2500;
+  let lastAutomixChange = 0;
+
+  function syncSlotButtons() {
+    sortableContainer.querySelectorAll(".sortable-item").forEach((item) => {
+      const idx = parseInt(item.dataset.effectIndex, 10);
+      if (!isNaN(idx) && slots[idx]) {
+        item.querySelector("button")?.classList.toggle("active", slots[idx].active);
+      }
+    });
+  }
+
+  function applyOptionsToSlot(slot) {
+    const iframe = slot.optionsSection?.querySelector("iframe");
+    const doc = iframe?.contentDocument;
+    if (doc) {
+      applyOptions(doc, slot.options);
+      doc.dispatchEvent(new CustomEvent("optionsApplied"));
+    }
+  }
+
+  function runAutomix() {
+    const { enabled, visualizerIds, postProcessorIds } = bottomPanel.getAutomixState();
+    if (!enabled) return;
+    const now = Date.now();
+    if (!audio.kick || now - lastAutomixChange < AUTOMIX_COOLDOWN_MS) return;
+    lastAutomixChange = now;
+
+    const fileInputKeys = (e) => Object.keys(e.fileInputs || {});
+    const pick = (arr, n) => {
+      const shuffled = [...arr].sort(() => Math.random() - 0.5);
+      return shuffled.slice(0, Math.min(n, shuffled.length));
+    };
+    const activate = (slot) => {
+      slot.options = generateRandomOptions(slot.effect.optionsSchema, fileInputKeys(slot.effect), slot.fileInputValues);
+      slot.optionsSection = createOptionsSection(slot);
+      insertOptionsSectionInOrder(slot);
+      slot.active = true;
+    };
+    const deactivate = (slot) => {
+      if (slot.effect.cleanup) slot.effect.cleanup(slot.canvas, slot.container, slot);
+      if (slot.optionsSection) {
+        slot.optionsSection.remove();
+        slot.optionsSection = null;
+        slot.fileInputValues = {};
+      }
+      slot.active = false;
+    };
+
+    const activeVizCount = slots.filter((s) => !s.effect.postProcess && s.active).length;
+    let actions = ["viz", "post", "options"].filter(() => Math.random() > 0.5);
+    if (actions.length === 0) actions.push("viz");
+    if (activeVizCount === 0 && visualizerIds.length > 0) actions = ["viz"];
+
+    if (actions.includes("viz") && visualizerIds.length > 0) {
+      const poolViz = slots.filter((s) => !s.effect.postProcess && visualizerIds.includes(s.effect.id));
+      const activeViz = poolViz.filter((s) => s.active);
+      const inactiveViz = poolViz.filter((s) => !s.active);
+      const turnOffCount = activeViz.length > 1 ? Math.floor(Math.random() * activeViz.length) : 0;
+      const toTurnOff = pick(activeViz, turnOffCount);
+      const remaining = activeViz.length - turnOffCount;
+      const maxTurnOn = Math.min(Math.max(0, 3 - remaining), inactiveViz.length);
+      let turnOnCount = Math.floor(Math.random() * (maxTurnOn + 1));
+      if (remaining === 0 && inactiveViz.length > 0) turnOnCount = Math.max(1, turnOnCount);
+      const toTurnOn = pick(inactiveViz, turnOnCount);
+      toTurnOff.forEach(deactivate);
+      toTurnOn.forEach(activate);
+      syncOptionsPanelVisibility();
+      syncSlotButtons();
+    }
+    if (actions.includes("post") && postProcessorIds.length > 0) {
+      const poolPost = slots.filter((s) => s.effect.postProcess && postProcessorIds.includes(s.effect.id));
+      const activePost = poolPost.filter((s) => s.active);
+      const inactivePost = poolPost.filter((s) => !s.active);
+      const turnOffCount = Math.floor(Math.random() * (activePost.length + 1));
+      const toTurnOff = pick(activePost, turnOffCount);
+      const remaining = activePost.length - turnOffCount;
+      const maxTurnOn = Math.min(Math.max(0, 3 - remaining), inactivePost.length);
+      const turnOnCount = Math.floor(Math.random() * (maxTurnOn + 1));
+      const toTurnOn = pick(inactivePost, turnOnCount);
+      toTurnOff.forEach(deactivate);
+      toTurnOn.forEach(activate);
+      syncOptionsPanelVisibility();
+      syncSlotButtons();
+    }
+    if (actions.includes("options")) {
+      const inPool = (s) =>
+        s.effect.postProcess ? postProcessorIds.includes(s.effect.id) : visualizerIds.includes(s.effect.id);
+      for (const i of effectOrder) {
+        const slot = slots[i];
+        if (!slot?.active || !slot.effect.optionsSchema || !inPool(slot)) continue;
+        slot.options = generateRandomOptions(slot.effect.optionsSchema, fileInputKeys(slot.effect), slot.fileInputValues);
+        applyOptionsToSlot(slot);
+      }
+    }
+  }
 
   function loop() {
-    const now = performance.now();
-    const delta = now - lastTime;
-    if (delta > 0) fpsSamples.push(1000 / delta);
-    if (fpsSamples.length > 10) fpsSamples.shift();
-    lastTime = now;
-    const fps = fpsSamples.length ? Math.round(fpsSamples.reduce((a, b) => a + b, 0) / fpsSamples.length) : 0;
-    bottomPanel.updateFps(fps);
-
     if (width && height) {
       resizeMain(width, height);
       mainCtx.fillStyle = blend.base === "white" ? "#fff" : "#000";
@@ -337,6 +516,7 @@ startBtn.addEventListener("click", async () => {
       audioOptions = bottomPanel.getOptions();
       updateAudio(audio, audioOptions);
       bottomPanel.draw();
+      runAutomix();
 
       for (const i of effectOrder) {
         const slot = slots[i];

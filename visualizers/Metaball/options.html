@@ -33,18 +33,18 @@
       }
       function syncButtons() {
         container.querySelectorAll('button').forEach(function(btn) {
-          btn.style.opacity = btn.dataset.scheme === input.value ? '1' : '0.5';
-          btn.style.outline = btn.dataset.scheme === input.value ? '2px solid black' : 'none';
+          btn.style.opacity = btn.dataset.value === input.value ? '1' : '0.5';
+          btn.style.outline = btn.dataset.value === input.value ? '2px solid black' : 'none';
         });
       }
       Object.keys(schemes).forEach(function(id) {
         var btn = document.createElement('button');
         btn.type = 'button';
-        btn.dataset.scheme = id;
+        btn.dataset.value = id;
         btn.title = id.charAt(0).toUpperCase() + id.slice(1);
         btn.style.cssText = 'width:32px;height:20px;margin:0 2px 0 0;padding:0;border:1px solid #333;border-radius:3px;background:' + gradient(schemes[id]) + ';cursor:pointer';
         btn.addEventListener('click', function() {
-          input.value = id;
+          input.value = btn.dataset.value;
           syncButtons();
           input.dispatchEvent(new Event('change', { bubbles: true }));
         });

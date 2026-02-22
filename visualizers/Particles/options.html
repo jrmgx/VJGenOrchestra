@@ -11,8 +11,9 @@
 </head>
 <body>
   <label>Particle type</label>
-  <div class="particle-selector" id="particleSelector"></div>
-  <input type="hidden" name="particleType" id="particleInput" value="bubble">
+  <div class="particle-selector" id="particleSelector">
+    <input type="hidden" name="particleType" id="particleInput" value="bubble">
+  </div>
   <label>Emoji <input type="text" name="emoji" value="🙂" placeholder="🙂"></label>
   <label>Count <input type="range" name="count" min="200" max="8000" step="100" value="889"></label>
   <label>Speed <input type="range" name="speed" min="0" max="3" step="0.1" value="1"></label>
@@ -34,14 +35,14 @@
   function syncSelection() {
     const v = input.value;
     container.querySelectorAll("button").forEach(btn => {
-      btn.classList.toggle("selected", btn.dataset.id === v);
+      btn.classList.toggle("selected", btn.dataset.value === v);
     });
   }
 
   types.forEach((t) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.dataset.id = t.id;
+    btn.dataset.value = t.id;
     if (t.img) {
       const img = document.createElement("img");
       img.src = new URL(t.img, base).href;
@@ -51,7 +52,7 @@
       btn.textContent = t.label;
     }
     btn.addEventListener("click", () => {
-      input.value = t.id;
+      input.value = btn.dataset.value;
       input.dispatchEvent(new Event("change", { bubbles: true }));
       syncSelection();
     });

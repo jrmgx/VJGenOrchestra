@@ -1,0 +1,37 @@
+<div id="bottom-panel">
+  <button type="button" class="bottom-panel-toggle" title="Show/hide panel">▼</button>
+  <div class="bottom-panel-content">
+    <div class="viz-area">
+      <canvas id="bottom-panel-canvas" width="200" height="56" title="Bass | Mid | High bars. Red/green line = min level. Bottom strip = bass rise (orange line = min rise)"></canvas>
+      <div class="kick-led-wrap">
+        <div class="kick-led" title="Kick detected"></div>
+        <small>Kick</small>
+      </div>
+    </div>
+    <div class="sliders">
+      <label title="Ignore kicks below this bass level. Filters out noise.">
+        <span>Min level</span>
+        <input type="range" name="kickThreshold" min="0" max="1" step="0.01" value="0.2" title="Ignore kicks below this bass level. Filters out noise.">
+      </label>
+      <label title="How much bass must jump in one frame to trigger. Lower = more sensitive.">
+        <span>Min rise</span>
+        <input type="range" name="kickDiff" min="0" max="0.5" step="0.01" value="0.15" title="How much bass must jump in one frame to trigger. Lower = more sensitive.">
+      </label>
+      <label title="How long the kick stays on (in frames). Longer = visualizers react longer.">
+        <span>Hold time</span>
+        <input type="range" name="kickFrames" min="1" max="15" step="1" value="5" title="How long the kick stays on (in frames). Longer = visualizers react longer.">
+      </label>
+    </div>
+  </div>
+  <div class="automix-section">
+    <div>
+      <label for="automix-check">
+        Auto mix
+        <input type="checkbox" id="automix-check">
+      </label>
+      <p>Select visualizer that automix can play</p>
+    </div>
+    <select id="automix-viz-select" multiple title="Select visualizers for automix pool"></select>
+    <select id="automix-post-select" multiple title="Select post-processors for automix pool"></select>
+  </div>
+</div>

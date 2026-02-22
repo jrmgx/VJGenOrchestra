@@ -101,16 +101,18 @@ Keyboard shortcut that are shown on the user interface are accessible with `ctrl
 
 The bottom panel has multiple parts:
 
-1- The **audio** part on the left lets you tune kick detection in real time while playing.
+**1- The audio part**
 
-##### What it shows
+The audio part on the left lets you tune kick detection in real time while playing.**
+
+What it shows
 
 - **Bass | Mid | High** – Three bars for the current frequency levels (bass = low, mid = mid, high = treble).
 - **Red/green line** – The **min level** threshold. Bass must be above this line for a kick to trigger. The line turns green when bass is above it.
 - **Rise strip** (below the bars) – How much the bass jumped from the previous frame. The **orange vertical line** is the **min rise** threshold. When the gray/green bar passes that line and bass is above the red line, a kick is detected.
 - **Kick LED** – Lights up when a kick is detected.
 
-##### Sliders
+Sliders
 
 | Slider      | Meaning                                                                 |
 |------------|-------------------------------------------------------------------------|
@@ -120,4 +122,20 @@ The bottom panel has multiple parts:
 
 Kick detection uses **transient** logic: it reacts to a sudden rise in bass, not to the level alone. If changing **Min level** has little effect, try **Min rise** instead—it controls sensitivity to bass jumps.
 
-2- The **webcam** part on the right is to be defined. // TODO
+**2- The automix part**
+
+The automix part on the right lets the engine automatically change visualizers and post-processors on kick triggers.**
+
+How automix works
+
+- **Checkbox** – Enable or disable automix. When enabled, the engine will periodically change which visualizers and post-processors are active, and randomize their options.
+- **Visualizers list** – Multi-select of visualizers that can be picked by automix. Only effects in this list will be turned on or off automatically. You can still manually activate visualizers outside the list; automix will leave them alone.
+- **Post-processors list** – Same for post-processors (Bloom, Glitch, etc.).
+
+On each kick (with a cooldown to avoid too frequent changes), automix makes incremental changes: it randomly turns off some active effects and turns on some inactive ones from the pools. It does not reshuffle everything at once, so transitions stay gradual. Options (sliders, colors, etc.) are randomized each time an effect is activated, except file-type options which are ignored.
+
+**3- The webcam part**
+
+The webcam part on the right is to be defined.**
+
+TODO
