@@ -105,6 +105,7 @@ const dotsDiameter = dotsRadius * 2;
 
 // Forest mode
 const FOREST_FOV = 800;
+const FOREST_TEXTURE_SIZE = 128;
 const pineTreesMax = 155;
 const pineTreesTotal = 48;
 const pineTreesMaxLayers = 10;
@@ -734,9 +735,7 @@ function createPineTree(layers, maxSize, minSize, colors, needleCountFactor, nee
       context.fillStyle = gradient;
       context.fillRect(0, 0, canvasSize, canvasSize);
     }
-    const image = new Image();
-    image.src = c.toDataURL();
-    pineTree.layers.push(image);
+    pineTree.layers.push(c);
   }
   return pineTree;
 }
@@ -750,6 +749,34 @@ async function createPineTrees(state) {
     const colors = pineTreeColors[i % pineTreeColors.length];
     state.pineTreeSourceHolder.push(createPineTree(layers, maxSize, 4, colors, 2, 12));
   }
+}
+
+async function createForestTextureArray(gl, forestState) {
+  const sources = forestState.pineTreeSourceHolder;
+  let layerIndex = 0;
+  for (const source of sources) {
+    source.layerTextureStartIndex = layerIndex;
+    layerIndex += source.layers.length;
+  }
+  const totalLayers = layerIndex;
+  const textureArray = createTextureArray(gl, FOREST_TEXTURE_SIZE, FOREST_TEXTURE_SIZE, totalLayers);
+  const stagingCanvas = document.createElement('canvas');
+  stagingCanvas.width = FOREST_TEXTURE_SIZE;
+  stagingCanvas.height = FOREST_TEXTURE_SIZE;
+  const stagingCtx = stagingCanvas.getContext('2d');
+  for (let i = 0; i < sources.length; i++) {
+    const source = sources[i];
+    for (let j = 0; j < source.layers.length; j++) {
+      if ((i * 10 + j) % 20 === 0) await yieldToBrowser();
+      const layer = source.layers[j];
+      stagingCtx.clearRect(0, 0, FOREST_TEXTURE_SIZE, FOREST_TEXTURE_SIZE);
+      stagingCtx.drawImage(layer, 0, 0, layer.width, layer.height, 0, 0, FOREST_TEXTURE_SIZE, FOREST_TEXTURE_SIZE);
+      loadTextureIntoArray(gl, textureArray, source.layerTextureStartIndex + j, stagingCanvas, FOREST_TEXTURE_SIZE, FOREST_TEXTURE_SIZE);
+    }
+  }
+  gl.bindTexture(gl.TEXTURE_2D_ARRAY, textureArray);
+  gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
+  return textureArray;
 }
 
 async function addPineTrees(state) {
@@ -794,7 +821,7 @@ async function addPineTrees(state) {
     if (!overlapping && newHolder.length < pineTreesMax) {
       newHolder.push({
         x: newTree.x, y: newTree.y, z: Math.random() * (pineTreeLayerDistance * 2),
-        size: source.size, radius: source.radius, layers: source.layers, distance: 0
+        size: source.size, radius: source.radius, layers: source.layers, layerTextureStartIndex: source.layerTextureStartIndex, distance: 0
       });
     }
   }
@@ -943,14 +970,17 @@ async function initCity(container, w, h) {
   return cityState;
 }
 
-function ensureCanvasOrder(container, mode, webglCanvas, engineCanvas) {
-  const target = mode === 'city' ? webglCanvas : engineCanvas;
-  if (container.lastElementChild !== target) container.appendChild(target);
+function ensureCanvasOrder(container, webglCanvas) {
+  if (container.lastElementChild !== webglCanvas) container.appendChild(webglCanvas);
 }
 
-async function initForest(w, h) {
+async function initForest(w, h, gl, shaderProgram, buffers) {
   const forestState = { border: { left: 1, top: 1, right: w, bottom: h }, lastW: w, lastH: h };
   await createPineTrees(forestState);
+  forestState.textureArray = await createForestTextureArray(gl, forestState);
+  forestState.gl = gl;
+  forestState.shaderProgram = shaderProgram;
+  forestState.buffers = { ...buffers, textureUniformLocation: gl.getUniformLocation(shaderProgram, 'u_textureArray') };
   await addPineTrees(forestState);
   return forestState;
 }
@@ -1055,7 +1085,8 @@ function drawCity(city, shared, options, audio) {
   gl.drawElements(gl.TRIANGLES, webgl.faces.length, gl.UNSIGNED_INT, 0);
 }
 
-function drawForest(forest, shared, ctx, options, audio) {
+function drawForest(forest, shared, options, audio) {
+  const gl = forest.gl;
   const w = shared.w;
   const h = shared.h;
   const center = shared.center;
@@ -1067,7 +1098,8 @@ function drawForest(forest, shared, ctx, options, audio) {
   moveItems(forest.pineTreeHolder, dx, dy, forest.gridWidth, forest.gridHeight, forest.gridStartPositionX, forest.gridEndPositionX, forest.gridStartPositionY, forest.gridEndPositionY);
   sortForestTrees(forest);
 
-  ctx.clearRect(0, 0, w, h);
+  const webgl = { vertices: [], faces: [], uvs: [], layers: [] };
+  const sizeScale = 1 + heightScale;
 
   for (const pineTree of forest.pineTreeHolder) {
     const inside = pineTree.x > forest.gridStartPositionX + pineTree.radius &&
@@ -1075,22 +1107,54 @@ function drawForest(forest, shared, ctx, options, audio) {
       pineTree.y > forest.gridStartPositionY + pineTree.radius &&
       pineTree.y < forest.gridEndPositionY - pineTree.radius;
 
-    if (inside) {
-      const sizeScale = 1 + heightScale;
-      const m = pineTree.layers.length;
-      for (let j = 0; j < m; j++) {
-        const layer = pineTree.layers[j];
-        const z = m - j * pineTreeLayerDistance + pineTree.z;
-        const scale = FOREST_FOV / (FOREST_FOV + z);
-        const x2d = pineTree.x * scale + center.x;
-        const y2d = pineTree.y * scale + center.y;
-        const size = pineTree.size * sizeScale;
-        const x = x2d - pineTree.radius * sizeScale;
-        const y = y2d - pineTree.radius * sizeScale;
-        if (layer.complete) ctx.drawImage(layer, 0, 0, pineTree.size, pineTree.size, x, y, size, size);
-      }
+    if (!inside) continue;
+
+    const m = pineTree.layers.length;
+    const layerTextureStart = pineTree.layerTextureStartIndex;
+    for (let j = 0; j < m; j++) {
+      const z = m - j * pineTreeLayerDistance + pineTree.z;
+      const scale = FOREST_FOV / (FOREST_FOV + z);
+      const x2d = pineTree.x * scale + center.x;
+      const y2d = pineTree.y * scale + center.y;
+      const size = pineTree.size * sizeScale;
+      const hw = pineTree.radius * sizeScale;
+      const v0 = { x2d: x2d - hw, y2d: y2d - hw };
+      const v1 = { x2d: x2d + hw, y2d: y2d - hw };
+      const v2 = { x2d: x2d + hw, y2d: y2d + hw };
+      const v3 = { x2d: x2d - hw, y2d: y2d + hw };
+      drawFace(v0, v1, v2, v3, getUvCoordinates(1, 1), layerTextureStart + j, webgl);
     }
   }
+
+  if (webgl.vertices.length === 0) return;
+
+  gl.viewport(0, 0, w, h);
+  gl.scissor(shared.border.left, shared.border.top, shared.border.right - shared.border.left, shared.border.bottom - shared.border.top);
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+  gl.useProgram(forest.shaderProgram);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D_ARRAY, forest.textureArray);
+  gl.uniform1i(forest.buffers.textureUniformLocation, 0);
+
+  const posBuf = createBuffer(gl, gl.ARRAY_BUFFER, new Float32Array(webgl.vertices), gl.STATIC_DRAW);
+  const uvBuf = createBuffer(gl, gl.ARRAY_BUFFER, new Float32Array(webgl.uvs), gl.STATIC_DRAW);
+  const layerBuf = createBuffer(gl, gl.ARRAY_BUFFER, new Float32Array(webgl.layers), gl.STATIC_DRAW);
+  const idxBuf = createBuffer(gl, gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(webgl.faces), gl.STATIC_DRAW);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+  gl.vertexAttribPointer(forest.buffers.positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, uvBuf);
+  gl.vertexAttribPointer(forest.buffers.texcoordAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, layerBuf);
+  gl.vertexAttribPointer(forest.buffers.layerAttributeLocation, 1, gl.FLOAT, false, 0, 0);
+  gl.uniform2f(forest.buffers.resolutionUniformLocation, w, h);
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, idxBuf);
+  gl.drawElements(gl.TRIANGLES, webgl.faces.length, gl.UNSIGNED_INT, 0);
 }
 
 export function render(canvas, ctx, audio, container, options = {}) {
@@ -1109,13 +1173,12 @@ export function render(canvas, ctx, audio, container, options = {}) {
       pointer: { x: w / 2 + 25, y: h / 2 - 25 },
       pointerInitialPos: { x: w / 2 + 25, y: h / 2 - 25 }
     };
-    state.initPromise = Promise.all([
-      initCity(container, w, h),
-      initForest(w, h)
-    ]).then(([city, forest]) => {
+    state.initPromise = (async () => {
+      const city = await initCity(container, w, h);
+      const forest = await initForest(w, h, city.gl, city.shaderProgram, city.buffers);
       state.city = city;
       state.forest = forest;
-    });
+    })();
   }
 
   if (!state.city || !state.forest) return;
@@ -1126,7 +1189,7 @@ export function render(canvas, ctx, audio, container, options = {}) {
   shared.center = { x: w / 2, y: h / 2 };
   shared.border = { left: 1, top: 1, right: w, bottom: h };
 
-  ensureCanvasOrder(container, mode, state.city.canvas, canvas);
+  ensureCanvasOrder(container, state.city.canvas);
 
   updatePointer(shared);
 
@@ -1139,13 +1202,17 @@ export function render(canvas, ctx, audio, container, options = {}) {
     }
     drawCity(state.city, shared, options, audio);
   } else {
+    if (state.city.canvas.width !== w || state.city.canvas.height !== h) {
+      state.city.canvas.width = w;
+      state.city.canvas.height = h;
+    }
     if (state.forest.lastW !== w || state.forest.lastH !== h) {
       state.forest.border = shared.border;
       state.forest.lastW = w;
       state.forest.lastH = h;
       addPineTrees(state.forest).catch(() => {});
     }
-    drawForest(state.forest, shared, ctx, options, audio);
+    drawForest(state.forest, shared, options, audio);
   }
 }
 

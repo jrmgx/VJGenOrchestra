@@ -35,70 +35,29 @@ function getShapePoint(shape, cx, cy, radius, index, segments, time) {
   return shape === 'square' ? getSquarePoint(cx, cy, radius, index, segments, time) : getCirclePoint(cx, cy, radius, index, segments, time);
 }
 
-// --- Drawing ---
-function setPixel(data, w, h, x, y, r, g, b, a) {
-  if (x < 0 || x >= w || y < 0 || y >= h) return;
-  const i = (x + y * w) * 4;
-  data[i] = r; data[i + 1] = g; data[i + 2] = b; data[i + 3] = a;
-}
-
-function setPixelThick(data, w, h, x, y, r, g, b, a) {
-  const half = (STROKE_WIDTH - 1) / 2;
-  const xi = x | 0, yi = y | 0;
-  for (let oy = -half; oy <= half; oy++)
-    for (let ox = -half; ox <= half; ox++)
-      setPixel(data, w, h, xi + ox, yi + oy, r, g, b, a);
-}
-
-function drawLine(data, w, h, x1, y1, x2, y2, r, g, b, a) {
-  const ix1 = x1 | 0, iy1 = y1 | 0, ix2 = x2 | 0, iy2 = y2 | 0;
-  const dx = Math.abs(ix2 - ix1), dy = Math.abs(iy2 - iy1);
-  const sx = ix1 < ix2 ? 1 : -1, sy = iy1 < iy2 ? 1 : -1;
-  let err = dx - dy, lx = ix1, ly = iy1;
-  const maxIter = w + h + 100;
-  for (let iter = 0; iter < maxIter; iter++) {
-    setPixelThick(data, w, h, lx, ly, r, g, b, a);
-    if (lx === ix2 && ly === iy2) break;
-    const e2 = 2 * err;
-    if (e2 > -dx) { err -= dy; lx += sx; }
-    if (e2 < dy) { err += dx; ly += sy; }
-  }
-}
-
-function quadBezier(s, c, e, t) {
-  const t1 = 1 - t;
-  return t1 * t1 * s + 2 * t1 * t * c + t * t * e;
-}
-
-function drawBezierEdge(data, w, h, p1x, p1y, cpx, cpy, p2x, p2y, segs, r, g, b, a) {
-  const step = 1 / segs;
-  for (let i = step; i <= 1 + step; i += step) {
-    const x1 = quadBezier(p1x, cpx, p2x, i - step) | 0;
-    const y1 = quadBezier(p1y, cpy, p2y, i - step) | 0;
-    const x2 = quadBezier(p1x, cpx, p2x, i) | 0;
-    const y2 = quadBezier(p1y, cpy, p2y, i) | 0;
-    drawLine(data, w, h, x1, y1, x2, y2, r, g, b, a);
-  }
-}
-
-function drawQuad(data, w, h, pp1, pp2, pp3, pp4, shape, circleObj, cr, cg, cb) {
+// --- Drawing (Canvas 2D API - GPU accelerated) ---
+function drawQuad(ctx, pp1, pp2, pp3, pp4, shape, circleObj, cr, cg, cb) {
   const cp1x = (pp1.x2d + pp2.x2d) / 2, cp1y = (pp1.y2d + pp2.y2d) / 2;
   const cp2x = (pp2.x2d + pp3.x2d) / 2, cp2y = (pp2.y2d + pp3.y2d) / 2;
   const cp3x = (pp3.x2d + pp4.x2d) / 2, cp3y = (pp3.y2d + pp4.y2d) / 2;
   const cp4x = (pp4.x2d + pp1.x2d) / 2, cp4y = (pp4.y2d + pp1.y2d) / 2;
 
+  ctx.strokeStyle = `rgb(${cr},${cg},${cb})`;
+  ctx.beginPath();
   if (shape === 'square') {
-    drawLine(data, w, h, pp4.x2d, pp4.y2d, pp1.x2d, pp1.y2d, cr, cg, cb, 255);
-    drawLine(data, w, h, pp1.x2d, pp1.y2d, pp2.x2d, pp2.y2d, cr, cg, cb, 255);
-    drawLine(data, w, h, pp2.x2d, pp2.y2d, pp3.x2d, pp3.y2d, cr, cg, cb, 255);
-    drawLine(data, w, h, pp3.x2d, pp3.y2d, pp4.x2d, pp4.y2d, cr, cg, cb, 255);
+    ctx.moveTo(pp4.x2d, pp4.y2d);
+    ctx.lineTo(pp1.x2d, pp1.y2d);
+    ctx.lineTo(pp2.x2d, pp2.y2d);
+    ctx.lineTo(pp3.x2d, pp3.y2d);
+    ctx.closePath();
   } else {
-    const segs = circleObj.z < FOV / 10 ? 12 : 8;
-    drawBezierEdge(data, w, h, cp4x, cp4y, pp1.x2d, pp1.y2d, cp1x, cp1y, segs, cr, cg, cb, 255);
-    drawBezierEdge(data, w, h, cp1x, cp1y, pp2.x2d, pp2.y2d, cp2x, cp2y, segs, cr, cg, cb, 255);
-    drawBezierEdge(data, w, h, cp2x, cp2y, pp3.x2d, pp3.y2d, cp3x, cp3y, segs, cr, cg, cb, 255);
-    drawBezierEdge(data, w, h, cp3x, cp3y, pp4.x2d, pp4.y2d, cp4x, cp4y, segs, cr, cg, cb, 255);
+    ctx.moveTo(cp4x, cp4y);
+    ctx.quadraticCurveTo(pp1.x2d, pp1.y2d, cp1x, cp1y);
+    ctx.quadraticCurveTo(pp2.x2d, pp2.y2d, cp2x, cp2y);
+    ctx.quadraticCurveTo(pp3.x2d, pp3.y2d, cp3x, cp3y);
+    ctx.quadraticCurveTo(pp4.x2d, pp4.y2d, cp4x, cp4y);
   }
+  ctx.stroke();
 }
 
 // --- Colors ---
@@ -119,7 +78,6 @@ function clampColor(color, min) {
 function buildTunnelRings(w, h, shape, preserveMp) {
   const rings = [];
   const mp = preserveMp ? { x: preserveMp.x, y: preserveMp.y } : { x: Math.random() * w, y: Math.random() * h };
-  const center = { x: 0, y: 0 };
   let audioIdx = 8;
 
   for (let z = -FOV; z < FOV; z += Z_STEP) {
@@ -213,9 +171,10 @@ export function render(canvas, ctx, audio, container, options = {}) {
   clampColor(col, 0.6);
   clampColor(col2, 0.4);
 
-  const imageData = ctx.getImageData(0, 0, w, h);
-  const data = imageData.data;
-  for (let i = 0; i < data.length; i += 4) data[i] = data[i + 1] = data[i + 2] = 0, data[i + 3] = 255;
+  ctx.clearRect(0, 0, w, h);
+  ctx.lineWidth = STROKE_WIDTH;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
 
   let needsSort = false;
 
@@ -266,7 +225,7 @@ export function render(canvas, ctx, audio, container, options = {}) {
         const cg = Math.min(255, Math.round(ring.color.g * lineVal * depthFactor * BRIGHTNESS));
         const cb = Math.min(255, Math.round(ring.color.b * lineVal * depthFactor * BRIGHTNESS));
 
-        drawQuad(data, w, h, seg, seg.subs[1], seg.subs[2], seg.subs[0], shape, ring, cr, cg, cb);
+        drawQuad(ctx, seg, seg.subs[1], seg.subs[2], seg.subs[0], shape, ring, cr, cg, cb);
       }
 
       const closeIndex = j < ring.segments.length - 1 ? seg.index : (ring.segments.find(s => s.active)?.index ?? 0);
@@ -284,8 +243,6 @@ export function render(canvas, ctx, audio, container, options = {}) {
 
   if (needsSort) rings.sort((a, b) => b.z - a.z);
   state.time += 0.005;
-
-  ctx.putImageData(imageData, 0, 0);
 }
 
 export function cleanup(canvas, container, slot) {
