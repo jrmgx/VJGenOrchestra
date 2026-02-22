@@ -10,6 +10,9 @@ html, body {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
+a,a:hover,a:visited {
+  color: white;
+}
 label {
   display: block;
   padding: 0.2rem 0;
