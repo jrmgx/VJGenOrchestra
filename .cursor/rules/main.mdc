@@ -16,6 +16,7 @@ IMPORTANT:
  - Find the root cause of bugs, do not try workarounds.
  - Do not implement defensive code by default, keep everything simple.
  - Always double check if your new code can be refactored with existing code.
+ - The engine should be agnostic and not know about specific visualizer.
 
 # General Project Info
 

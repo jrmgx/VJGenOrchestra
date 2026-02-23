@@ -213,6 +213,12 @@ function setupOptionsListeners(slot, optionsContainer, contentContainer) {
   doc.dispatchEvent(new CustomEvent("optionsApplied"));
   doc.addEventListener("change", update);
   doc.addEventListener("input", update);
+  const win = optionsContainer.contentWindow;
+  if (win) {
+    window.addEventListener("message", function onOptionsSync(e) {
+      if (e.source === win && e.data?.type === "optionsSync") update();
+    });
+  }
   update();
 }
 
@@ -285,6 +291,7 @@ startBtn.addEventListener("click", async () => {
 
   const optionsBox = document.createElement("div");
   optionsBox.id = "options-box";
+  optionsBox.className = "scroll-container";
   optionsPanel.appendChild(optionsBox);
   optionsPanel.classList.add("empty");
 
@@ -628,6 +635,8 @@ startBtn.addEventListener("click", async () => {
     });
   }
 
+  const vizListScroll = document.createElement("div");
+  vizListScroll.className = "viz-list-scroll scroll-container";
   const sortableContainer = document.createElement("div");
   sortableContainer.className = "sortable-list";
   for (const i of effectOrder) {
@@ -669,7 +678,8 @@ startBtn.addEventListener("click", async () => {
     item.appendChild(btn);
     sortableContainer.appendChild(item);
   }
-  controls.appendChild(sortableContainer);
+  vizListScroll.appendChild(sortableContainer);
+  controls.appendChild(vizListScroll);
   updateKeyHints();
 
   function isOptionsFocused() {

@@ -4,6 +4,7 @@
   --bg-mid: #222;
   --border: 1px solid #333;
   --border-mid: 1px solid #444;
+  --bottom-panel-margin: 8rem;
 }
 
 html, body {
@@ -40,6 +41,7 @@ html, body {
   position: absolute;
   top: 1rem;
   left: 1rem;
+  bottom: var(--bottom-panel-margin);
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -50,6 +52,16 @@ html, body {
 #controls .controls-row {
   width: 100%;
   box-sizing: border-box;
+}
+.scroll-container {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scroll-container::-webkit-scrollbar {
+  display: none;
 }
 #controls .sortable-list {
   display: flex;
@@ -73,6 +85,7 @@ html, body {
   background: var(--bg-mid);
   color: #fff;
   border: var(--border-mid);
+  border-bottom: 2px solid transparent;
   border-radius: var(--radius);
   font-size: 0.9rem;
 }
@@ -91,6 +104,7 @@ html, body {
 #controls button.active {
   background: #3a3a3a;
   border-color: #555;
+  border-bottom-color: #0c8;
 }
 #controls select {
   width: 100%;
@@ -106,6 +120,7 @@ html, body {
   position: absolute;
   top: 1rem;
   right: 1rem;
+  bottom: var(--bottom-panel-margin);
   z-index: 2;
   display: flex;
   flex-direction: column;
@@ -113,6 +128,7 @@ html, body {
   gap: 0.5rem;
 }
 .options-panel-buttons {
+  flex-shrink: 0;
   display: flex;
   gap: 0.5rem;
 }
@@ -152,8 +168,6 @@ html, body {
   flex-direction: column;
   gap: 0.5rem;
   color: #e0e0e0;
-  max-height: 80vh;
-  overflow-y: auto;
   margin-top: 0.5rem;
   min-width: 220px;
 }
@@ -246,6 +260,7 @@ html, body {
   font-family: inherit;
 }
 #controls .blend-row {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 0.25rem;
