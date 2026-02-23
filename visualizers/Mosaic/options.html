@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body>
+  <label>Zoom <input type="range" name="zoom" min="0" max="1" step="0.01" value="0.1"></label>
+  <label><input type="checkbox" name="zoomReactive"> Zoom reactive</label>
+  <label>Speed X <input type="range" name="speedX" min="-2" max="2" step="0.05" value="0"></label>
+  <label>Speed Y <input type="range" name="speedY" min="-2" max="2" step="0.05" value="0"></label>
+  <label><input type="checkbox" name="mirror"> Mirror</label>
+  <input type="hidden" name="resetOffset" value="0">
+  <label><button type="button" id="resetSpeed">Reset speed</button></label>
+  <script>
+    document.getElementById("resetSpeed").addEventListener("click", () => {
+      for (const name of ["speedX", "speedY"]) {
+        const el = document.querySelector(`input[name=${name}]`);
+        if (el) el.value = 0;
+      }
+      document.querySelector("input[name=resetOffset]").value = Date.now();
+      window.parent.postMessage({ type: "optionsSync" }, "*");
+    });
+  </script>
+</body>
+</html>

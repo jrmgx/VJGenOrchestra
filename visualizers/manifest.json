@@ -6,14 +6,15 @@
     "VideoClips",
     "Text",
     "BirdsEye",
-    "BirdsEye2",
     "Yugam",
     "WrapTunnel",
     "Metaball",
     "Bubbles",
     "Glitch",
     "Kaleidoscope",
-    "Bloom",
     "Chromatic",
-    "SimpleShapes"
+    "Mosaic",
+    "SimpleShapes",
+    "Trail",
+    "Bloom"
 ]
