@@ -651,7 +651,7 @@ startBtn.addEventListener("click", async () => {
     const handle = document.createElement("span");
     handle.className = "drag-handle";
     handle.title = "Drag to reorder";
-    handle.textContent = "⋮⋮";
+    handle.textContent = effect.postProcess ? "∑" : "❇︎";
     btn.appendChild(handle);
     btn.appendChild(document.createTextNode(slot.displayName));
     btn.addEventListener("click", () => {
