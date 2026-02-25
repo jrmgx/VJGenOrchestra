@@ -1,0 +1,34 @@
+<p><a href="../README.html">← back</a></p>
+<h1>How to use VJGenOrchestra</h1>
+<h2>Setup your computer</h2>
+<p>VJGenOrchestra use the microphone as the audio input source, so you need a tiny bit of setup to have it working.</p>
+<h3>Windows</h3>
+<p>You can use an App like <a href="https://vb-audio.com/Cable/">Cable</a>.<br>
+This App will allow you to route your sound to a virtual microphone and then use it into your web browser where you have VJGO started.</p>
+<h3>macOS</h3>
+<p>You can use an App like <a href="https://existential.audio/blackhole/">Blackhole</a> (virtual audio driver).<br>
+Then open <strong>Audio MIDI Setup</strong> and create a <strong>Multi-Output Device</strong> that includes Blackhole and your speakers.<br>
+This App will allow you to route your sound to a virtual microphone and then use it into your web browser where you have VJGO started.</p>
+<h2>User Interface</h2>
+<p>Keyboard shortcut that are shown on the user interface are accessible with <code>ctrl</code> key + symbol.</p>
+<p>VJGenOrchestra has three main parts: the <strong>visualizer list</strong> (left), the <strong>options panel</strong> (top right), and the <strong>bottom panel</strong>.</p>
+<h3>Visualizer list</h3>
+<ul>
+<li><strong>Blend mode:</strong> How layers are combined (Normal, Lighten, etc.). Use <code>Ctrl</code>+<code>-</code> / <code>Ctrl</code>+<code>+</code> to cycle.</li>
+<li><strong>Effect buttons:</strong> Click to toggle visualizers and post-processors on/off. Active effects show a green underline.</li>
+<li><strong>Drag &amp; Drop:</strong> Drag to reorder. Order = compositing order (first = bottom layer).</li>
+<li><strong>Shortcuts:</strong> <code>Ctrl</code>+<code>1</code> … <code>Ctrl</code>+<code>0</code> toggles the first 10 effects.</li>
+</ul>
+<h3>Options panel</h3>
+<ul>
+<li><strong>Options:</strong> Shows/hides the options box. When visible, each active effect has a collapsible section with its controls (sliders, colors, etc.). File inputs appear as trigger buttons.</li>
+</ul>
+<h3>Bottom panel</h3>
+<p><strong>Audio (left):</strong> Kick detection tuning. <strong>Bass | Mid | High</strong> bars show frequency levels.
+Green line = min level; bass must be above it.
+Rise strip = bass jump; orange line = min rise.
+Kick triggers when both thresholds pass.
+<strong>Sliders:</strong> Min level (filter noise), Min rise (sensitivity to jumps), Hold time (how long kick stays on).</p>
+<p><strong>Automix (right) — BETA:</strong> Checkbox to enable.
+Multi-select lists define which visualizers and post-processors automix can turn on/off.
+On each kick (with cooldown), it makes incremental changes: randomly toggles some effects and randomizes their options.</p>

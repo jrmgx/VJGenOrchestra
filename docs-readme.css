@@ -1,0 +1,38 @@
+/* Dark mode styling for readme/docs iframe (injected, do not modify source HTML) */
+html, body {
+  margin: 0;
+  padding: 1rem 1.25rem;
+  background: #1a1a1a !important;
+  color: #e0e0e0 !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 15px;
+  line-height: 1.5;
+}
+h1, h2, h3, p, li, blockquote {
+  font-family: Arial, Helvetica, sans-serif !important;
+}
+h1 { font-size: 1.5rem; margin: 0 0 0.75rem; color: #fff !important; }
+h2 { font-size: 1.2rem; margin: 1.25rem 0 0.5rem; color: #ccc !important; }
+h3 { font-size: 1rem; margin: 1rem 0 0.4rem; color: #bbb !important; }
+p { margin: 0.5rem 0; }
+ul, ol { margin: 0.5rem 0; padding-left: 1.5rem; }
+li { margin: 0.25rem 0; }
+a {
+  color: #e0e0e0 !important;
+  text-decoration: underline;
+}
+a:hover { opacity: 0.9; }
+blockquote {
+  margin: 0.75rem 0;
+  padding: 0.5rem 1rem;
+  border-left: 3px solid #444;
+  background: #222;
+  color: #b0b0b0;
+}
+code {
+  background: #2a2a2a;
+  padding: 0.15em 0.4em;
+  border-radius: 3px;
+  font-size: 0.9em;
+  font-family: Arial, Helvetica, sans-serif !important;
+}

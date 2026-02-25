@@ -3,8 +3,30 @@ import { createAudio, updateAudio } from "./audioAnalysis.js";
 import { createBottomPanel } from "./bottomPanel.js";
 import { createOffscreenCanvas, createMainCanvas } from "./canvas.js";
 
-const startBtn = document.querySelector("#start");
+const startBtn = document.querySelector("#start-btn");
+const startScreen = document.querySelector("#start-screen");
 const app = document.querySelector("#app");
+
+const docsIframe = document.querySelector("#start-docs");
+const docsCssPromise = fetch("docs-readme.css").then((r) => r.text());
+
+async function injectDocsCss() {
+  try {
+    const doc = docsIframe?.contentDocument;
+    if (!doc?.documentElement) return;
+    const head = doc.head || doc.documentElement.appendChild(doc.createElement("head"));
+    if (head.querySelector("#docs-readme-injected")) return;
+    const style = doc.createElement("style");
+    style.id = "docs-readme-injected";
+    style.textContent = await docsCssPromise;
+    head.appendChild(style);
+  } catch (_) {}
+}
+
+if (docsIframe) {
+  docsIframe.addEventListener("load", injectDocsCss);
+  if (docsIframe.contentDocument?.documentElement) injectDocsCss();
+}
 const controls = document.querySelector("#controls");
 
 function extractOptionsSchema(doc, fileInputKeys = []) {
@@ -241,7 +263,7 @@ function setIframeHeight(iframe) {
 }
 
 startBtn.addEventListener("click", async () => {
-  startBtn.style.display = "none";
+  startScreen.style.display = "none";
   app.style.display = "block";
 
   const [effects, { analyser }] = await Promise.all([loadEffects(), startMic()]);
