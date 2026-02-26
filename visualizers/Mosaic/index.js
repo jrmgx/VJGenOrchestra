@@ -91,11 +91,12 @@ export function render(canvas, ctx, audio, container, options = {}, engine, sour
   state.lastTime = now;
 
   const moveX = speedX;
-  const moveY = mirror ? speedX : speedY;
-  state.offsetX = (state.offsetX + moveX * dt) % 1;
-  state.offsetY = (state.offsetY + moveY * dt) % 1;
-  if (state.offsetX < 0) state.offsetX += 1;
-  if (state.offsetY < 0) state.offsetY += 1;
+  const moveY = speedY;
+  const wrap = mirror ? 2 : 1;
+  state.offsetX = (state.offsetX + moveX * dt) % wrap;
+  state.offsetY = (state.offsetY + moveY * dt) % wrap;
+  if (state.offsetX < 0) state.offsetX += wrap;
+  if (state.offsetY < 0) state.offsetY += wrap;
   state.texture.offset.set(state.offsetX, state.offsetY);
 
   const aspect = width / height;
