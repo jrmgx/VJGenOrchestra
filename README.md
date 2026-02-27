@@ -23,4 +23,4 @@ This is how you should use this project:
 
 ### Advanced
 
-- [Convert GIF to video clip](./docs/gif-to-video-clip.md)<br>Use ffmpeg to convert animated GIFs to MP4 for the VideoClips visualizer.
+- [Add your own videos](./docs/add-your-own-videos.md)<br>Add video clips or convert GIFs for the VideoClips visualizer.

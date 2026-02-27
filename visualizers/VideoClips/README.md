@@ -4,13 +4,9 @@ Video loop visualizer with audio-reactive playback speed.
 
 ## Assets
 
-Place mp4 files in `assets/videos/` (any subfolder). Add thumbnails and update the list:
+Use the scripts from the project root to add videos:
 
-```bash
-# Generate thumbnails (creates *-thumb.jpg next to each .mp4)
-for f in assets/videos/**/*.mp4; do
-  ffmpeg -y -i "$f" -ss 1 -vframes 1 -q:v 2 "${f%.mp4}-thumb.jpg" 2>/dev/null
-done
+- **Existing videos** (mp4, mov, etc.): `./add_video_clip.sh video.mp4`
+- **GIFs**: `./transform_gif_to_videoclip.sh animation.gif`
 
-# Update assets/videos/videos.json with the new list
-```
+See [Add your own videos](../../docs/add-your-own-videos.md) for details.

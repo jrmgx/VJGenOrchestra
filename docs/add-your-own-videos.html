@@ -1,0 +1,43 @@
+<h1>Add Your Own Videos to VideoClips</h1>
+<p>The VideoClips visualizer plays video files from <code>assets/videos/</code>.<br>
+Use the provided scripts to add your own clips.</p>
+<h2>Prerequisites</h2>
+<ul>
+<li><a href="https://ffmpeg.org/">ffmpeg</a> installed on your system</li>
+</ul>
+<h2>Add Existing Video Files</h2>
+<p>For mp4, mov, webm, or other video files you already have:</p>
+<pre><code class="language-bash">./add_video_clip.sh my-video.mp4
+</code></pre>
+<p>This moves the file to <code>assets/videos/clips/</code>, generates a thumbnail, and appends the entry to <code>assets/videos/videos.json</code>.</p>
+<p>Multiple files:</p>
+<pre><code class="language-bash">./add_video_clip.sh video1.mp4 video2.mov
+</code></pre>
+<h2>Convert GIF to Video</h2>
+<p>To use animated GIFs, convert them first:</p>
+<pre><code class="language-bash">./transform_gif_to_videoclip.sh my-animation.gif
+</code></pre>
+<p>This converts the GIF to MP4, places it in <code>assets/videos/clips/</code>, generates a thumbnail, and appends the entry to <code>assets/videos/videos.json</code>.</p>
+<h3>Finding good GIFs</h3>
+<ul>
+<li>Example search on <a href="https://giphy.com/search/geometry">giphy.com/search/geometry</a></li>
+</ul>
+<h3>Manual conversion with ffmpeg</h3>
+<pre><code class="language-bash">ffmpeg -i input.gif -movflags +faststart -pix_fmt yuv420p -vf &quot;scale=trunc(iw/2)*2:trunc(ih/2)*2&quot; output.mp4
+ffmpeg -y -i output.mp4 -ss 0 -vframes 1 -q:v 2 output-thumb.jpg
+</code></pre>
+<ul>
+<li><code>-movflags +faststart</code>: Optimizes for web playback</li>
+<li><code>-pix_fmt yuv420p</code>: Ensures broad browser compatibility</li>
+<li><code>-vf &quot;scale=...&quot;</code>: Ensures even dimensions (required for yuv420p)</li>
+</ul>
+<h2>File Layout</h2>
+<p>Videos go in: <strong><code>assets/videos/clips/</code></strong><br>
+The scripts update <strong><code>assets/videos/videos.json</code></strong> automatically.<br>
+You may need to do it manually: each entry has <code>path</code> and <code>thumb</code>.</p>
+<h2>Tips</h2>
+<ul>
+<li>For short GIFs, use <code>-ss 0</code> when generating thumbnails.</li>
+<li>Keep file sizes reasonable for smooth web playback.</li>
+<li>Loop your GIF before converting if you want seamless playback.</li>
+</ul>
