@@ -1,1 +1,3 @@
 visualizers/*/standalone
+*.gif
+/assets/videos/clips

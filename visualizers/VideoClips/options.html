@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8">
-<script src="videos.js"></script>
 <style>
 .video-selector { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.5rem 0; }
 .video-selector button { padding: 0; border: 2px solid #444; background: #222; cursor: pointer; border-radius: 4px; overflow: hidden; }
@@ -23,7 +22,8 @@
   const container = document.getElementById("videoSelector");
   const input = document.getElementById("videoInput");
   const base = new URL(".", document.baseURI).href;
-  const videos = typeof VIDEOS !== "undefined" ? VIDEOS : [];
+  const t = new URL(document.URL).searchParams.get("t") || Date.now();
+  const videosUrl = new URL("../../assets/videos/videos.json?t=" + t, document.baseURI).href;
 
   function thumbUrl(v) {
     return base + "../../" + (v.thumb || v.path.replace(".mp4", "-thumb.jpg"));
@@ -36,25 +36,28 @@
     });
   }
 
-  videos.forEach((v, i) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.dataset.value = v.path;
-    const img = document.createElement("img");
-    img.src = thumbUrl(v);
-    img.alt = v.path.split("/").pop();
-    btn.appendChild(img);
-    btn.addEventListener("click", () => {
-      input.value = btn.dataset.value;
-      input.dispatchEvent(new Event("change", { bubbles: true }));
-      syncSelection();
+  function init(videos) {
+    videos.forEach((v) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.dataset.value = v.path;
+      const img = document.createElement("img");
+      img.src = thumbUrl(v);
+      img.alt = v.path.split("/").pop();
+      btn.appendChild(img);
+      btn.addEventListener("click", () => {
+        input.value = btn.dataset.value;
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+        syncSelection();
+      });
+      container.appendChild(btn);
     });
-    container.appendChild(btn);
-  });
+    if (videos.length && !input.value) input.value = videos[0].path;
+    document.addEventListener("optionsApplied", syncSelection);
+    syncSelection();
+  }
 
-  if (videos.length && !input.value) input.value = videos[0].path;
-  document.addEventListener("optionsApplied", syncSelection);
-  syncSelection();
+  fetch(videosUrl).then(r => r.json()).then(init).catch(() => init([]));
 })();
   </script>
 </body>

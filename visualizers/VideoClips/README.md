@@ -12,5 +12,5 @@ for f in assets/videos/**/*.mp4; do
   ffmpeg -y -i "$f" -ss 1 -vframes 1 -q:v 2 "${f%.mp4}-thumb.jpg" 2>/dev/null
 done
 
-# Update visualizers/videoclips/videos.js with the new list
+# Update assets/videos/videos.json with the new list
 ```
