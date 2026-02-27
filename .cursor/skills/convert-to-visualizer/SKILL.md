@@ -66,4 +66,4 @@ export const fileInputs = {
  - For custom canvases (e.g. Three.js), inject into `container` instead of `document.body`.
  - **State**: Store per-instance state (scene, renderer, etc.) in `container.visualizerState`. Do NOT use module-level variables—the same visualizer can appear multiple times in the manifest and each instance must work independently. In `cleanup`, clear `container.visualizerState` and dispose resources.
  - Move UI controls (toggles, sliders) to `options.html` with `name`/`id` on inputs; values arrive as `options`. For file inputs, use the `fileInputs` export instead.
- - Add the id to `manifest.json`. See `visualizers/SimpleViz`, `SimpleShapes` for reference.
+ - Add the id to `manifest.json`. See `visualizers/SimpleViz`, `Simple3D` for reference.
