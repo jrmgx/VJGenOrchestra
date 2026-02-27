@@ -4,11 +4,13 @@
 <body>
   <label>Zoom <input type="range" name="zoom" min="0" max="1" step="0.01" value="0.1"></label>
   <label><input type="checkbox" name="zoomReactive"> Zoom reactive</label>
+  <label>Shake <input type="range" name="shake" min="0" max="1" step="0.01" value="0"></label>
+  <label><input type="checkbox" name="shakeReactive"> Shake reactive</label>
   <label>Speed X <input type="range" name="speedX" min="-2" max="2" step="0.05" value="0"></label>
   <label>Speed Y <input type="range" name="speedY" min="-2" max="2" step="0.05" value="0"></label>
-  <label><input type="checkbox" name="mirror"> Mirror</label>
   <input type="hidden" name="resetOffset" value="0">
   <label><button type="button" id="resetSpeed">Reset speed</button></label>
+  <label><input type="checkbox" name="mirror"> Mirror</label>
   <script>
     document.getElementById("resetSpeed").addEventListener("click", () => {
       for (const name of ["speedX", "speedY"]) {

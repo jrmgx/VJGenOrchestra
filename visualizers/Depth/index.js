@@ -73,9 +73,15 @@ export function render(canvas, ctx, audio, container, options = {}, engine, sour
   state.texture.wrapS = state.texture.wrapT = mirror ? THREE.MirroredRepeatWrapping : THREE.RepeatWrapping;
 
   let zoom = options.zoom ?? 0;
-  if (options.zoomReactive) {
+  if (options.zoomReactive === true) {
     const level = ((audio.bass ?? 0) + (audio.mid ?? 0) + (audio.high ?? 0)) / 3;
-    zoom *= 0.9 + 0.2 * level;
+    zoom *= 0.5 + level;
+  }
+  let shake = options.shake ?? 0;
+  if (shake > 0 && options.shakeReactive === true) {
+    const level = ((audio.bass ?? 0) + (audio.mid ?? 0) + (audio.high ?? 0)) / 3;
+    const kickBoost = (audio.kick ?? 0) ? 3 : 0.6;
+    shake *= (0.5 + level * 0.5) * kickBoost;
   }
   const speedX = options.speedX ?? 0;
   const speedY = options.speedY ?? 0;
@@ -97,7 +103,11 @@ export function render(canvas, ctx, audio, container, options = {}, engine, sour
   state.offsetY = (state.offsetY + moveY * dt) % wrap;
   if (state.offsetX < 0) state.offsetX += wrap;
   if (state.offsetY < 0) state.offsetY += wrap;
-  state.texture.offset.set(state.offsetX, state.offsetY);
+
+  const shakeAmount = shake * 0.2;
+  const shakeX = (Math.random() - 0.5) * shakeAmount;
+  const shakeY = (Math.random() - 0.5) * shakeAmount;
+  state.texture.offset.set(state.offsetX + shakeX, state.offsetY + shakeY);
 
   const aspect = width / height;
   const zoomFactor = 1 + zoom * 59;
