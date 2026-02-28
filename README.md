@@ -24,3 +24,4 @@ This is how you should use this project:
 ### Advanced
 
 - [Add your own videos](./docs/add-your-own-videos.md)<br>Add video clips or convert GIFs for the VideoClips visualizer.
+- [Contribute to the code](https://github.com/jrmgx/VJGenOrchestra)
