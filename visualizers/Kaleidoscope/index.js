@@ -5,6 +5,7 @@ const KaleidoscopeShader = {
   uniforms: {
     tDiffuse: { value: null },
     segments: { value: 6 },
+    roll: { value: 0 },
   },
   vertexShader: `
 varying vec2 vUv;
@@ -16,16 +17,19 @@ void main() {
   fragmentShader: `
 uniform sampler2D tDiffuse;
 uniform float segments;
+uniform float roll;
 varying vec2 vUv;
 void main() {
-  vec2 uv = vUv - 0.5;
-  float angle = atan(uv.y, uv.x);
-  float radius = length(uv) * 2.0;
-  float segmentAngle = 6.28318 / segments;
-  angle = mod(angle + 3.14159, segmentAngle);
-  angle = abs(angle - segmentAngle * 0.5) + segmentAngle * 0.5;
-  vec2 folded = vec2(cos(angle), sin(angle)) * radius * 0.5 + 0.5;
-  gl_FragColor = texture2D(tDiffuse, folded);
+  vec2 sc = vUv - 0.5;
+  float phi = atan(sc.y, sc.x);
+  float r = length(sc);
+  float divisor = 6.28318 / segments;
+  phi = phi - divisor * floor(phi / divisor);
+  phi = min(phi, divisor - phi);
+  phi += roll;
+  vec2 uv = vec2(cos(phi), sin(phi)) * r + 0.5;
+  uv = max(min(uv, 2.0 - uv), -uv);
+  gl_FragColor = texture2D(tDiffuse, uv);
 }
 `,
 };
@@ -111,17 +115,17 @@ export function render(canvas, ctx, audio, container, options = {}, engine, sour
   state.texture.image = sourceCanvas;
   state.texture.needsUpdate = true;
 
-  const baseSegments = options.segments ?? 6;
-  let segments = baseSegments;
+  state.effectPass.uniforms.segments.value = Math.max(2, Math.round(options.segments ?? 6));
+  let roll = options.roll ?? 0;
   if (options.reactive) {
     const bass = audio.bass ?? 0;
     const mid = audio.mid ?? 0;
     const high = audio.high ?? 0;
     const level = bass * 0.5 + mid * 0.3 + high * 0.2;
-    const kickBoost = audio.kick ? 3 : 0;
-    segments = baseSegments + level * 2 + kickBoost;
+    const variation = (level - 0.5) * 0.4;
+    roll = Math.max(0, Math.min(1, roll + variation));
   }
-  state.effectPass.uniforms.segments.value = Math.max(2, Math.round(segments));
+  state.effectPass.uniforms.roll.value = roll * 6.28318;
 
   if (state.renderer.domElement.width !== width || state.renderer.domElement.height !== height) {
     state.renderer.setSize(width, height);
