@@ -1,21 +1,21 @@
 ---
-name: convert-to-visualizer
-description: Convert a standalone/external visualizer codebase to a visualizer compatible with our engine. Use the intent is to convert an existing standalone visualizer.
+name: create-visualizer
+description: Create a new visualizer from scratch compatible with the VJGenOrchestra engine. Use when the user wants to add a new visualizer, create a visual effect, or build a custom visualization.
 ---
 
-# Convert to Visualizer
+# Create Visualizer
 
 ## When to use
 
-When the intent is to convert an existing standalone visualizer use these instructions:
+When the intent is to create a new visualizer from scratch, use these instructions.
 
 ## Instructions
 
 ### General rules
 
-To get a working visualizer please follow these instructions:
+To get a working visualizer, follow these rules:
 
- - You must render onto the Canvas passed to render(canvas, ctx, audio, container, options, engine)
+ - You must render onto the Canvas passed to `render(canvas, ctx, audio, container, options, engine)`
  - Each visualizer renders to its own offscreen canvas; the engine composites all active ones onto the main canvas
  - Prefer transparent backgrounds (clearRect or alpha compositing) so layers blend when multiple visualizers are active
  - Get audio from the passed `audio` object: `audio.getByteFrequencyData()`, `audio.analyser`, or pre-filtered `audio.kick`, `audio.bass`, `audio.mid`, `audio.high` (see SimpleViz for reference)
@@ -59,11 +59,11 @@ export const fileInputs = {
 
 ### Step by step instructions
 
- - Convert this standalone visualizer in `[DIR]` to work with VJGenOrchestra.
  - Create `visualizers/[id]/index.js` that exports `render(canvas, ctx, audio, container, options, engine)` and optionally `cleanup(canvas, container, slot)`.
- - Replace their audio setup with the passed `audio` (use `audio.getByteFrequencyData()` or `audio.analyser.getByteTimeDomainData()`).
- - Replace their `requestAnimationFrame` loop—the engine calls `render` each frame.
+ - Implement `render`: draw to the provided `canvas`/`ctx`. Use `audio.getByteFrequencyData()` or `audio.analyser.getByteTimeDomainData()` for raw audio; use `audio.kick`, `audio.bass`, `audio.mid`, `audio.high` for pre-filtered values.
+ - The engine calls `render` each frame—no `requestAnimationFrame` loop needed.
  - For custom canvases (e.g. Three.js), inject into `container` instead of `document.body`.
  - **State**: Store per-instance state (scene, renderer, etc.) in `container.visualizerState`. Do NOT use module-level variables—the same visualizer can appear multiple times in the manifest and each instance must work independently. In `cleanup`, clear `container.visualizerState` and dispose resources.
- - Move UI controls (toggles, sliders) to `options.html` with `name`/`id` on inputs; values arrive as `options`. For file inputs, use the `fileInputs` export instead.
- - Add the id to `manifest.json`. See `visualizers/SimpleViz`, `Simple3D` for reference.
+ - Add `options.html` for UI controls (toggles, sliders) with `name`/`id` on inputs; values arrive as `options`. For file inputs, use the `fileInputs` export instead.
+ - Add the id to `manifest.json`.
+ - See `visualizers/SimpleViz`, `Simple3D` for reference.
