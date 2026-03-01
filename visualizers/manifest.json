@@ -1,10 +1,11 @@
 [
   "SimpleViz",
-  "Particles",
+  "Physarum",
   "VideoClips",
   "Text",
   "BirdsEye",
   "Yugam",
+  "Particles",
   "WrapTunnel",
   "Metaball",
   "Bubbles",
@@ -14,6 +15,6 @@
   "Depth",
   "Simple3D",
   "Trail",
-  "Bloom",
-  "Organic"
+  "Organic",
+  "Bloom"
 ]
