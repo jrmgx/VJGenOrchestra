@@ -40,7 +40,7 @@ For pick-one-from-many options (e.g. color scheme, mode, shape), use a hidden in
 - Container: the hidden input must be inside a `label` or a `div` that also contains the buttons (so the engine finds them via `closest("label") || parentElement`).
 - On click: set `input.value = btn.dataset.value`, dispatch `change`, and sync button state (opacity, selected class).
 - Listen for `optionsApplied` to sync when options are set programmatically (e.g. automix).
-- For dynamically created buttons (from a list), use `btn.dataset.value = item.id` (or path, etc.). See Metaball, VideoClips, Particles, BirdsEye, WrapTunnel.
+- For dynamically created buttons (from a list), use `btn.dataset.value = item.id` (or path, etc.). See Metaball, VideoClips, Particles, BirdsEye, TunnelWrap.
 
 ### File inputs
 

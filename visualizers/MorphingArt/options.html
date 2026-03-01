@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body>
+  <div>MorphingArt inspired by <a href="https://codepen.io/VoXelo" target="_blank">Techartist</a></div>
+  <label>Shape
+    <input type="hidden" name="shape" value="0" id="shape">
+    <button type="button" data-value="0" title="Spiral">Spiral</button>
+    <button type="button" data-value="1" title="Lattice">Lattice</button>
+    <button type="button" data-value="2" title="Torus">Torus</button>
+    <button type="button" data-value="3" title="Helix">Helix</button>
+  </label>
+  <label><input type="checkbox" name="reactive"> Speed up rotation on kick</label>
+  <label><input type="checkbox" name="changeShapeOnKick" checked> Change shape on kick (random)</label>
+  <script>
+    (function() {
+      var input = document.getElementById('shape');
+      var container = input.closest('label');
+      function syncButtons() {
+        container.querySelectorAll('button').forEach(function(btn) {
+          btn.style.opacity = btn.dataset.value === input.value ? '1' : '0.5';
+          btn.style.outline = btn.dataset.value === input.value ? '2px solid black' : 'none';
+        });
+      }
+      container.querySelectorAll('button').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          input.value = btn.dataset.value;
+          syncButtons();
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+      });
+      document.addEventListener('optionsApplied', syncButtons);
+      syncButtons();
+    })();
+  </script>
+</body>
+</html>

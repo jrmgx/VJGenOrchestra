@@ -72,10 +72,20 @@ export function render(canvas, ctx, audio, container, options = {}, engine, sour
   const mirror = options.mirror ?? false;
   state.texture.wrapS = state.texture.wrapT = mirror ? THREE.MirroredRepeatWrapping : THREE.RepeatWrapping;
 
+  const now = performance.now() / 1000;
+  const dt = now - state.lastTime;
+  state.lastTime = now;
+
   let zoom = options.zoom ?? 0;
   if (options.zoomReactive === true) {
-    const level = ((audio.bass ?? 0) + (audio.mid ?? 0) + (audio.high ?? 0)) / 3;
-    zoom *= 0.5 + level;
+    const kick = audio.kick === 1;
+    const target = zoom * (0.75 + (kick ? 0.25 : 0));
+    if (state.smoothedZoom == null) state.smoothedZoom = target;
+    const t = 1 - Math.exp(-16 * dt);
+    state.smoothedZoom += (target - state.smoothedZoom) * t;
+    zoom = state.smoothedZoom;
+  } else {
+    state.smoothedZoom = null;
   }
   let shake = options.shake ?? 0;
   if (shake > 0 && options.shakeReactive === true) {
@@ -92,11 +102,7 @@ export function render(canvas, ctx, audio, container, options = {}, engine, sour
     state.lastResetToken = resetToken;
   }
 
-  const now = performance.now() / 1000;
-  const dt = now - state.lastTime;
-  state.lastTime = now;
-
-  const moveX = speedX;
+  const moveX = -speedX;
   const moveY = speedY;
   const wrap = mirror ? 2 : 1;
   state.offsetX = (state.offsetX + moveX * dt) % wrap;
