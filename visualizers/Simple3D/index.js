@@ -85,7 +85,8 @@ export function render(canvas, ctx, audio, container, options = {}, engine, sour
   state.mesh.scale.setScalar((sizePercent * visibleHeight) / baseSize);
 
   const baseSpeed = 0.01;
-  const speed = baseSpeed + (bass + mid + high) * 0.04;
+  const speedMul = options.speed ?? 0.5;
+  const speed = (baseSpeed + (bass + mid + high) * 0.04) * speedMul;
   const dirX = (mid - high) * 2;
   const dirY = (high - mid) * 2;
   const dirZ = bass - 0.5;
