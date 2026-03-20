@@ -3,15 +3,4 @@ globs: *.json
 alwaysApply: true
 ---
 
-Always pretty format json for human readability
-example:
-```json
-["entry", "entry"]
-```
-would be
-```json
-[
-    "entry",
-    "entry"
-]
-```
+Pretty-format JSON for human readability. Full wording and example: **see [AGENTS.md](../../AGENTS.md)** → section **JSON formatting**.
