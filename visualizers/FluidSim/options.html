@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+</head>
+<body>
+  <label>Velocity diffusion <input type="range" name="velocityDiffusion" min="0" max="4" step="0.01" value="2"></label>
+  <label>Vorticity <input type="range" name="vorticity" min="0" max="50" step="1" value="15"></label>
+  <label>Colorful <input type="checkbox" name="colorful" checked>
+    <input type="color" name="primaryColor" value="#1a1aff">
+  </label>
+  <label>Kick cooldown <input type="range" name="cooldown" min="100" max="1200" step="50" value="400"></label>
+  <label>Auto move speed <input type="range" name="speed" min="0.02" max="0.3" step="0.01" value="0.08"></label>
+  <label>Random splat
+    <input type="hidden" name="randomSplatPulse" id="randomSplatPulse" value="0">
+    <button type="button" id="randomSplatBtn">Trigger</button>
+  </label>
+  <label><input type="checkbox" name="reactiveSplat"> Reactive (random splat on kick)</label>
+  <p style="margin-top:8px">
+    Based on
+    <a href="https://paveldogreat.github.io/WebGL-Fluid-Simulation/" target="_blank" rel="noopener noreferrer">
+      Fluid Simulation by Pavel Dobryakov
+    </a>
+    (MIT).
+  </p>
+  <script>
+    (function () {
+      const pulseInput = document.getElementById("randomSplatPulse");
+      const btn = document.getElementById("randomSplatBtn");
+      if (!pulseInput || !btn) return;
+
+      btn.addEventListener("click", () => {
+        const current = Number(pulseInput.value) || 0;
+        pulseInput.value = String(current + 1);
+        pulseInput.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    })();
+  </script>
+</body>
+</html>
