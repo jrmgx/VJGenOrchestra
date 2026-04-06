@@ -266,7 +266,8 @@ startBtn.addEventListener("click", async () => {
   startScreen.style.display = "none";
   app.style.display = "block";
 
-  const [effects, { analyser }] = await Promise.all([loadEffects(), startMic()]);
+  const { analyser } = await startMic();
+  const effects = await loadEffects();
   const audio = createAudio(analyser);
   const bottomPanel = await createBottomPanel(audio, analyser, app, { effects });
 

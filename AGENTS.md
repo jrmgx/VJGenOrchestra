@@ -16,6 +16,8 @@ This project is already in advanced development stage so:
 - Never remove attribution links.
 - Find the root cause of bugs; do not try workarounds.
 - Do not implement defensive code by default; keep everything simple.
+- Use US English in comments and code.
+- Do not comment everything.
 - Always double check if your new code can be refactored with existing code.
 - The engine should be agnostic and not know about specific visualizers.
 - If you start the server via `npx http-server -p 8888`, stop it after your test.
