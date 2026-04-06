@@ -82,6 +82,7 @@ const POINTS_FRAGMENT = `
   uniform sampler2D map;
   uniform float opacity;
   uniform float time;
+  uniform float flipX;
   varying vec3 vColor;
   varying float vBrightness;
   varying float vRotation;
@@ -91,6 +92,7 @@ const POINTS_FRAGMENT = `
     vec2 uv = gl_PointCoord - 0.5;
     float c = cos(vRotation), s = sin(vRotation);
     uv = vec2(uv.x * c - uv.y * s, uv.x * s + uv.y * c) + 0.5;
+    if (flipX > 0.5) uv.x = 1.0 - uv.x;
     vec4 tex = texture2D(map, uv);
     float fade = 0.15 + 0.85 * (0.5 + 0.5 * sin(time * vFadeSpeed + vFadePhase));
     float bri = vBrightness * fade;
@@ -198,6 +200,7 @@ function initThree(container, state) {
       map: { value: state.particleTexture },
       opacity: { value: 0.9 },
       time: { value: 0 },
+      flipX: { value: 0 },
     },
     vertexShader: POINTS_VERTEX,
     fragmentShader: POINTS_FRAGMENT,
@@ -257,6 +260,7 @@ export function render(canvas, ctx, audio, container, options = {}, engine = {})
   if (needsTextureUpdate && state.material) {
     state.lastParticleType = particleType;
     state.lastEmojiText = emojiText;
+    state.material.uniforms.flipX.value = particleType === "text" ? 1 : 0;
     state.particleTexture?.dispose();
     if (particleType === "text") {
       state.particleTexture = createTextTexture(emojiText);
