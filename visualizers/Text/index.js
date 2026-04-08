@@ -1,16 +1,18 @@
-function findFontSize(ctx, lines, w, h, fontFamily, bold) {
-  const lineHeight = 1.2;
+function findFontSize(ctx, lines, w, h, fontFamily) {
+  const lineGap = 1.2;
   let best = 8;
   let lo = 8;
   let hi = Math.floor(Math.min(w, h) * 0.5);
   while (lo <= hi) {
     const fontSize = Math.floor((lo + hi) / 2);
-    ctx.font = `${bold ? "bold " : ""}${fontSize}px ${fontFamily}`;
-    let totalH = 0;
+    ctx.font = `${fontSize}px ${fontFamily}`;
+    let totalH =
+      lines.length <= 1
+        ? fontSize
+        : (lines.length - 1) * fontSize * lineGap + fontSize;
     let fits = true;
     for (const line of lines) {
       if (ctx.measureText(line).width > w) fits = false;
-      totalH += fontSize * lineHeight;
     }
     if (totalH > h) fits = false;
     if (fits) {
@@ -31,24 +33,29 @@ export function render(canvas, ctx, audio, container, options = {}, engine = {})
 
   const color = options.color ?? "#fff";
   const fontFamily = options.font ?? "sans-serif";
-  const bold = options.bold !== false;
 
   ctx.clearRect(0, 0, w, h);
   if (!text) return;
 
-  const pad = 0.05;
+  const pad = 0.1;
   const innerW = w * (1 - pad * 2);
-  const lines = text.split("\n");
-  const fontSize = findFontSize(ctx, lines, innerW, h, fontFamily, bold);
-  ctx.font = `${bold ? "bold " : ""}${fontSize}px ${fontFamily}`;
+  const innerH = h * (1 - pad * 2);
+  const lines = text.split(/\r?\n/).map((line) => line.replace(/\r/g, ""));
+  const fontSize = findFontSize(ctx, lines, innerW, innerH, fontFamily);
+  ctx.font = `${fontSize}px ${fontFamily}`;
   ctx.fillStyle = color;
   ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-
   const lineHeight = fontSize * 1.2;
-  const totalHeight = lines.length * lineHeight;
-  let y = h / 2 - totalHeight / 2 + lineHeight / 2;
 
+  if (lines.length === 1) {
+    ctx.textBaseline = "middle";
+    ctx.fillText(lines[0], w / 2, h / 2);
+    return;
+  }
+
+  ctx.textBaseline = "top";
+  const blockH = (lines.length - 1) * lineHeight + fontSize;
+  let y = (h - blockH) / 2;
   for (const line of lines) {
     ctx.fillText(line, w / 2, y);
     y += lineHeight;

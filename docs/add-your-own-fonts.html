@@ -1,0 +1,36 @@
+<h1>Add Your Own Fonts to the Text Visualizer</h1>
+<p>The Text visualizer loads font files listed in <code>assets/fonts/fonts.json</code>.<br>
+Bundled fonts live in <code>assets/fonts/</code>. You can add more by copying files and updating the manifest.</p>
+<h2>Add a font file</h2>
+<ol>
+<li>Place a <code>.ttf</code> or <code>.woff2</code> file in <strong><code>assets/fonts/</code></strong> (use a short, ASCII filename without spaces if possible).</li>
+<li>Open <strong><code>assets/fonts/fonts.json</code></strong> and append a new object to the array, for example:</li>
+</ol>
+<pre><code class="language-json">{
+  "id": "my-display-font",
+  "label": "My Display Font",
+  "family": "VJGO_MyDisplayFont",
+  "src": "assets/fonts/MyDisplayFont-Regular.ttf"
+}
+</code></pre>
+<ol start="3">
+<li>Reload the app (hard refresh) so the engine registers the new <code>@font-face</code> and the options list rebuilds.</li>
+</ol>
+<h2>Field reference</h2>
+<table>
+<thead><tr><th>Field</th><th>Required</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>id</code></td><td>Yes</td><td>Stable slug (letters, numbers, hyphens).</td></tr>
+<tr><td><code>label</code></td><td>Yes</td><td>Name shown in the font picker.</td></tr>
+<tr><td><code>family</code></td><td>Yes</td><td>Unique CSS <code>font-family</code> name. Use a prefix like <code>VJGO_</code> and <strong>no spaces</strong> so it matches canvas and the UI. Must be unique across all entries.</td></tr>
+<tr><td><code>src</code></td><td>Yes for files</td><td>Path from the project root, e.g. <code>assets/fonts/YourFont.ttf</code>. Omit for built-in system entries (<code>system: true</code>).</td></tr>
+<tr><td><code>system</code></td><td>No</td><td>Set to <code>true</code> only for the three system fonts (<code>sans-serif</code>, <code>serif</code>, <code>monospace</code>).</td></tr>
+</tbody>
+</table>
+<p>Do not edit the three system entries unless you know what you are doing.</p>
+<h2>Tips</h2>
+<ul>
+<li>Prefer <strong>WOFF2</strong> or <strong>TTF</strong>; variable fonts are supported if the browser can load them.</li>
+<li>Keep <strong><code>family</code></strong> unique: duplicate names will conflict with <code>FontFace</code> registration.</li>
+<li>After changing <code>fonts.json</code>, keep it <strong>pretty-printed</strong> (readable array/objects) like the rest of the repo.</li>
+</ul>

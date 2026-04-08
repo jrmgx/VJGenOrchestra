@@ -1,0 +1,170 @@
+[
+  {
+    "id": "system-sans",
+    "label": "Sans (system)",
+    "family": "sans-serif",
+    "system": true
+  },
+  {
+    "id": "system-serif",
+    "label": "Serif (system)",
+    "family": "serif",
+    "system": true
+  },
+  {
+    "id": "system-mono",
+    "label": "Monospace (system)",
+    "family": "monospace",
+    "system": true
+  },
+  {
+    "id": "archivo-black",
+    "label": "Archivo Black",
+    "family": "VJGO_ArchivoBlack",
+    "src": "assets/fonts/ArchivoBlack-Regular.ttf"
+  },
+  {
+    "id": "asimovian",
+    "label": "Asimovian",
+    "family": "VJGO_Asimovian",
+    "src": "assets/fonts/Asimovian-Regular.ttf"
+  },
+  {
+    "id": "bangers",
+    "label": "Bangers",
+    "family": "VJGO_Bangers",
+    "src": "assets/fonts/Bangers-Regular.ttf"
+  },
+  {
+    "id": "barriecito",
+    "label": "Barriecito",
+    "family": "VJGO_Barriecito",
+    "src": "assets/fonts/Barriecito-Regular.ttf"
+  },
+  {
+    "id": "bitcount-grid-single",
+    "label": "Bitcount Grid Single",
+    "family": "VJGO_BitcountGridSingle",
+    "src": "assets/fonts/BitcountGridSingle-VariableFont_CRSV,ELSH,ELXP,slnt,wght.ttf"
+  },
+  {
+    "id": "croissant-one",
+    "label": "Croissant One",
+    "family": "VJGO_CroissantOne",
+    "src": "assets/fonts/CroissantOne-Regular.ttf"
+  },
+  {
+    "id": "danfo",
+    "label": "Danfo",
+    "family": "VJGO_Danfo",
+    "src": "assets/fonts/Danfo-Regular-VariableFont_ELSH.ttf"
+  },
+  {
+    "id": "erica-one",
+    "label": "Erica One",
+    "family": "VJGO_EricaOne",
+    "src": "assets/fonts/EricaOne-Regular.ttf"
+  },
+  {
+    "id": "fascinate",
+    "label": "Fascinate",
+    "family": "VJGO_Fascinate",
+    "src": "assets/fonts/Fascinate-Regular.ttf"
+  },
+  {
+    "id": "faster-one",
+    "label": "Faster One",
+    "family": "VJGO_FasterOne",
+    "src": "assets/fonts/FasterOne-Regular.ttf"
+  },
+  {
+    "id": "libre-baskerville",
+    "label": "Libre Baskerville",
+    "family": "VJGO_LibreBaskerville",
+    "src": "assets/fonts/LibreBaskerville-VariableFont_wght.ttf"
+  },
+  {
+    "id": "lilita-one",
+    "label": "Lilita One",
+    "family": "VJGO_LilitaOne",
+    "src": "assets/fonts/LilitaOne-Regular.ttf"
+  },
+  {
+    "id": "lobster-two",
+    "label": "Lobster Two",
+    "family": "VJGO_LobsterTwo",
+    "src": "assets/fonts/LobsterTwo-Bold.ttf"
+  },
+  {
+    "id": "matemasie",
+    "label": "Matemasie",
+    "family": "VJGO_Matemasie",
+    "src": "assets/fonts/Matemasie-Regular.ttf"
+  },
+  {
+    "id": "megrim",
+    "label": "Megrim",
+    "family": "VJGO_Megrim",
+    "src": "assets/fonts/Megrim-Regular.ttf"
+  },
+  {
+    "id": "plaster",
+    "label": "Plaster",
+    "family": "VJGO_Plaster",
+    "src": "assets/fonts/Plaster-Regular.ttf"
+  },
+  {
+    "id": "poller-one",
+    "label": "Poller One",
+    "family": "VJGO_PollerOne",
+    "src": "assets/fonts/PollerOne-Regular.ttf"
+  },
+  {
+    "id": "press-start-2p",
+    "label": "Press Start 2P",
+    "family": "VJGO_PressStart2P",
+    "src": "assets/fonts/PressStart2P-Regular.ttf"
+  },
+  {
+    "id": "rubik-dirt",
+    "label": "Rubik Dirt",
+    "family": "VJGO_RubikDirt",
+    "src": "assets/fonts/RubikDirt-Regular.ttf"
+  },
+  {
+    "id": "sedgwick-ave",
+    "label": "Sedgwick Ave Display",
+    "family": "VJGO_SedgwickAve",
+    "src": "assets/fonts/SedgwickAveDisplay-Regular.ttf"
+  },
+  {
+    "id": "sekuya",
+    "label": "Sekuya",
+    "family": "VJGO_Sekuya",
+    "src": "assets/fonts/Sekuya-Regular.ttf"
+  },
+  {
+    "id": "silkscreen",
+    "label": "Silkscreen",
+    "family": "VJGO_Silkscreen",
+    "src": "assets/fonts/Silkscreen-Bold.ttf"
+  },
+  {
+    "id": "titan-one",
+    "label": "Titan One",
+    "family": "VJGO_TitanOne",
+    "src": "assets/fonts/TitanOne-Regular.ttf"
+  },
+  {
+    "id": "tourney",
+    "label": "Tourney",
+    "family": "VJGO_Tourney",
+    "src": "assets/fonts/Tourney-VariableFont_wdth,wght.ttf"
+  },
+  {
+    "id": "train-one",
+    "label": "Train One",
+    "family": "VJGO_TrainOne",
+    "src": "assets/fonts/TrainOne-Regular.ttf"
+  }
+]

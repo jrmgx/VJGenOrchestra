@@ -2,6 +2,7 @@ import { start as startMic } from "./audio.js";
 import { createAudio, updateAudio } from "./audioAnalysis.js";
 import { createBottomPanel } from "./bottomPanel.js";
 import { createOffscreenCanvas, createMainCanvas } from "./canvas.js";
+import { preloadTextFonts } from "./textFonts.js";
 
 const startBtn = document.querySelector("#start-btn");
 const startScreen = document.querySelector("#start-screen");
@@ -268,6 +269,7 @@ startBtn.addEventListener("click", async () => {
 
   const { analyser } = await startMic();
   const effects = await loadEffects();
+  await preloadTextFonts();
   const audio = createAudio(analyser);
   const bottomPanel = await createBottomPanel(audio, analyser, app, { effects });
 
