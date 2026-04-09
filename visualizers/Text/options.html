@@ -38,16 +38,21 @@
 </head>
 <body>
   <label class="text-option"><span>Text</span><textarea name="text" rows="3" placeholder="Type text…"></textarea></label>
-  <label>Color <input type="color" name="color" value="#ffffff"></label>
+  <label><input type="checkbox" name="reactiveText"> Reactive text</label>
+  <label>Color <input type="color" name="color" value="#ffffff"> <input type="checkbox" name="reactiveColor"> Reactive color</label>
+  <label><input type="checkbox" name="outline" checked> Outline <input type="checkbox" name="outlineReactive"> Reactive</label>
   <div class="font-option">
     <label>Font</label>
     <input type="hidden" name="font" id="fontInput" value="">
+    <input type="hidden" name="fontPool" id="fontPoolInput" value="[]">
     <div class="font-selector" id="fontSelector"></div>
+    <label><input type="checkbox" name="reactiveFont"> Reactive font</label>
   </div>
   <script>
 (function() {
   const container = document.getElementById("fontSelector");
   const input = document.getElementById("fontInput");
+  const poolInput = document.getElementById("fontPoolInput");
   const jsonUrl = new URL("../../assets/fonts/fonts.json", document.baseURI).href;
 
   function loadFonts() {
@@ -86,6 +91,7 @@
 
   const entries = loadFonts();
   injectFaces(entries);
+  poolInput.value = JSON.stringify(entries.map((e) => e.family));
   if (entries.length) {
     const defaultFamily =
       entries.find((e) => e.family === "sans-serif")?.family ?? entries[0].family;
