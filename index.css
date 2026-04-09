@@ -70,6 +70,7 @@ html, body {
   z-index: 1;
   width: 14rem;
   box-sizing: border-box;
+  overflow: visible;
 }
 #controls .controls-row {
   width: 100%;
@@ -291,6 +292,12 @@ html, body {
   border: var(--border-mid);
   border-radius: var(--radius);
 }
+#controls .blend-controls-row {
+  position: relative;
+}
+#controls .blend-controls-row .blend-row {
+  width: 100%;
+}
 #controls .blend-row .key-hint {
   margin-left: 0;
   flex-shrink: 0;
@@ -304,4 +311,32 @@ html, body {
   border: none;
   font-size: 0.9rem;
   cursor: pointer;
+}
+#controls #left-panel-toggle {
+  position: absolute;
+  left: calc(100% + 0.25rem);
+  top: 0;
+  width: auto;
+  height: 100%;
+  padding: 0 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  background: var(--bg-mid);
+  color: #fff;
+  border: var(--border-mid);
+  border-radius: var(--radius);
+}
+#controls.panel-hidden {
+  width: 0;
+}
+#controls.panel-hidden .blend-row {
+  visibility: hidden;
+  pointer-events: none;
+}
+#controls.panel-hidden .viz-list-scroll {
+  display: none;
+}
+#controls.panel-hidden #left-panel-toggle {
+  left: 0;
 }

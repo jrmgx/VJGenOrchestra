@@ -308,7 +308,7 @@ startBtn.addEventListener("click", async () => {
 
   const optionsToggle = document.createElement("button");
   optionsToggle.id = "options-toggle";
-  optionsToggle.textContent = "Options";
+  optionsToggle.textContent = "Hide Options";
   optionsToggle.type = "button";
   buttonsRow.appendChild(optionsToggle);
 
@@ -316,7 +316,7 @@ startBtn.addEventListener("click", async () => {
 
   const optionsBox = document.createElement("div");
   optionsBox.id = "options-box";
-  optionsBox.className = "scroll-container";
+  optionsBox.className = "scroll-container visible";
   optionsPanel.appendChild(optionsBox);
   optionsPanel.classList.add("empty");
 
@@ -344,6 +344,7 @@ startBtn.addEventListener("click", async () => {
 
   optionsToggle.addEventListener("click", () => {
     optionsBox.classList.toggle("visible");
+    optionsToggle.textContent = optionsBox.classList.contains("visible") ? "Hide Options" : "Show Options";
     requestAnimationFrame(() => requestAnimationFrame(recalcIframeHeights));
   });
 
@@ -399,6 +400,8 @@ startBtn.addEventListener("click", async () => {
 
   let effectOrder = effects.map((_, i) => i);
 
+  const blendControlsRow = document.createElement("div");
+  blendControlsRow.className = "blend-controls-row controls-row";
   const blendRow = document.createElement("div");
   blendRow.className = "blend-row controls-row";
   const blendPrevKey = document.createElement("span");
@@ -418,10 +421,16 @@ startBtn.addEventListener("click", async () => {
     if (m.label === "Lighten") opt.selected = true;
     blendSelect.appendChild(opt);
   });
+  const leftPanelToggle = document.createElement("button");
+  leftPanelToggle.id = "left-panel-toggle";
+  leftPanelToggle.type = "button";
+  leftPanelToggle.textContent = "Hide";
   blendRow.appendChild(blendPrevKey);
   blendRow.appendChild(blendSelect);
   blendRow.appendChild(blendNextKey);
-  controls.appendChild(blendRow);
+  blendControlsRow.appendChild(blendRow);
+  blendControlsRow.appendChild(leftPanelToggle);
+  controls.appendChild(blendControlsRow);
 
   function getOutputCanvas(slot) {
     const canvases = slot.container.querySelectorAll("canvas");
@@ -593,7 +602,7 @@ startBtn.addEventListener("click", async () => {
 
   const createOptionsSection = (slot) => {
     const section = document.createElement("div");
-    section.className = "options-section collapsed";
+    section.className = "options-section";
     const header = document.createElement("div");
     header.className = "options-section-header";
     if (slot.effect.optionsUrl) {
@@ -662,6 +671,12 @@ startBtn.addEventListener("click", async () => {
 
   const vizListScroll = document.createElement("div");
   vizListScroll.className = "viz-list-scroll scroll-container";
+  leftPanelToggle.addEventListener("click", () => {
+    const willShow = controls.classList.contains("panel-hidden");
+    controls.classList.toggle("panel-hidden", !willShow);
+    leftPanelToggle.textContent = willShow ? "Hide" : "Show";
+  });
+
   const sortableContainer = document.createElement("div");
   sortableContainer.className = "sortable-list";
   for (const i of effectOrder) {
