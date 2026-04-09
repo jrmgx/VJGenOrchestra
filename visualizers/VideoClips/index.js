@@ -7,7 +7,8 @@ function videoUrl(path) {
 }
 
 function ensureVideo(container, src, state) {
-  if (state.video && state.video.src.endsWith(src)) return;
+  const targetHref = videoUrl(src);
+  if (state.video && state.video.src === targetHref) return;
   if (state.video) {
     state.video.pause();
     state.video.src = "";
@@ -21,7 +22,7 @@ function ensureVideo(container, src, state) {
   state.video.muted = true;
   state.video.playsInline = true;
   state.video.style.cssText = "display:none;width:200px;height:160px";
-  state.video.src = videoUrl(src);
+  state.video.src = targetHref;
   state.video.oncanplay = () => { state.ready = true; };
   state.video.onerror = () => console.warn("videoclips: video failed to load", src);
   container.appendChild(state.video);
