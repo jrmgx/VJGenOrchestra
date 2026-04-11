@@ -44,32 +44,53 @@ function almondPath(ctx, cx, cy, width, height) {
   ctx.closePath();
 }
 
-function closestOnAlmond(px, py, cx, cy, width, height) {
+function sampleAlmondBoundary(cx, cy, width, height, samplesPerCurve = 120) {
   const innerX = cx - width / 2;
   const outerX = cx + width / 2;
-  const c1x = cx - width * 0.15, c1y = cy - height * 0.55;
-  const c2x = cx + width * 0.15, c2y = cy + height * 0.4;
+  const c1x = cx - width * 0.15;
+  const c1y = cy - height * 0.55;
+  const c2x = cx + width * 0.15;
+  const c2y = cy + height * 0.4;
   const curves = [
     [innerX, cy, c1x, c1y, outerX, cy],
     [outerX, cy, c2x, c2y, innerX, cy],
   ];
-  let best = null;
-  let bestD = Infinity;
-  const samples = 120;
+  const pts = [];
   for (const [x0, y0, cx1, cy1, x2, y2] of curves) {
-    for (let i = 0; i <= samples; i++) {
-      const t = i / samples;
+    for (let i = 0; i <= samplesPerCurve; i++) {
+      const t = i / samplesPerCurve;
       const mt = 1 - t;
       const x = mt * mt * x0 + 2 * mt * t * cx1 + t * t * x2;
       const y = mt * mt * y0 + 2 * mt * t * cy1 + t * t * y2;
-      const d = (px - x) ** 2 + (py - y) ** 2;
-      if (d < bestD) {
-        bestD = d;
-        best = [x, y];
-      }
+      if (i === 0 && pts.length) continue;
+      pts.push([x, y]);
     }
   }
-  return best;
+  return pts;
+}
+
+function raySegmentIntersectT(ox, oy, vx, vy, x1, y1, x2, y2) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const det = vx * dy - vy * dx;
+  if (Math.abs(det) < 1e-12) return null;
+  const t = ((x1 - ox) * dy - (y1 - oy) * dx) / det;
+  const u = ((x1 - ox) * vy - (y1 - oy) * vx) / det;
+  if (t >= 0 && u >= 0 && u <= 1) return t;
+  return null;
+}
+
+/** Smallest t>0 where (cx,cy)+t*(ux,uy) hits the closed boundary (center should be inside). */
+function firstOutwardBoundaryHit(cx, cy, ux, uy, boundary) {
+  let bestT = Infinity;
+  for (let i = 0; i < boundary.length; i++) {
+    const j = (i + 1) % boundary.length;
+    const [x1, y1] = boundary[i];
+    const [x2, y2] = boundary[j];
+    const t = raySegmentIntersectT(cx, cy, ux, uy, x1, y1, x2, y2);
+    if (t != null && t > 1e-6 && t < bestT) bestT = t;
+  }
+  return bestT < Infinity ? bestT : null;
 }
 
 export function render(canvas, ctx, audio, container, options = {}) {
@@ -197,38 +218,31 @@ export function render(canvas, ctx, audio, container, options = {}) {
     const rayCount = 14;
     const baseRadius = Math.min(w, h) * 0.48;
     const stopBefore = 100;
-    const raysAlmondW = almondW;
-    const raysAlmondH = eyeRadius * 3;
     const raySpeed = (reactive ? (state.reactiveRaySpeed ?? 0.3) : (options.raySpeed ?? 0.3)) * (reactive ? 1 + energy * 1.5 : 1);
     state.rayAngle = (state.rayAngle ?? 0) + raySpeed * dt;
     const rot = state.rayAngle;
-    const lerpFactor = 0.12;
 
-    state.rayEnds ??= [];
-
+    const raysBoundary = sampleAlmondBoundary(centerX, centerY, almondW, almondH);
     ctx.strokeStyle = rayColor;
     ctx.lineWidth = effectLineW;
     ctx.lineCap = "round";
     for (let i = 0; i < rayCount; i++) {
       const angle = (i / rayCount) * Math.PI * 2 + rot;
-      const px = centerX + Math.cos(angle) * baseRadius;
-      const py = centerY + Math.sin(angle) * baseRadius;
-      const closest = closestOnAlmond(px, py, centerX, centerY, raysAlmondW, raysAlmondH);
-      if (closest) {
-        const dx = closest[0] - px;
-        const dy = closest[1] - py;
-        const len = Math.sqrt(dx * dx + dy * dy) || 1;
-        const tx = closest[0] - (dx / len) * stopBefore;
-        const ty = closest[1] - (dy / len) * stopBefore;
-        if (!state.rayEnds[i]) state.rayEnds[i] = [tx, ty];
-        const [ex, ey] = state.rayEnds[i];
-        state.rayEnds[i][0] = ex + (tx - ex) * lerpFactor;
-        state.rayEnds[i][1] = ey + (ty - ey) * lerpFactor;
-        ctx.beginPath();
-        ctx.moveTo(px, py);
-        ctx.lineTo(state.rayEnds[i][0], state.rayEnds[i][1]);
-        ctx.stroke();
-      }
+      const ux = Math.cos(angle);
+      const uy = Math.sin(angle);
+      const tExit = firstOutwardBoundaryHit(centerX, centerY, ux, uy, raysBoundary);
+      if (tExit == null) continue;
+      const tNear = tExit + stopBefore;
+      const tFar = baseRadius;
+      if (tNear >= tFar - 1e-3) continue;
+      const px = centerX + tFar * ux;
+      const py = centerY + tFar * uy;
+      const tx = centerX + tNear * ux;
+      const ty = centerY + tNear * uy;
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(tx, ty);
+      ctx.stroke();
     }
     ctx.lineCap = "butt";
   }
