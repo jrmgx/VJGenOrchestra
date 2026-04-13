@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body>
+  <label>Hue <input type="range" name="hue" min="-180" max="180" step="1" value="0"></label>
+  <label><input type="checkbox" name="hueReactive"> Reactive</label>
+
+  <label>Saturation <input type="range" name="saturation" min="0" max="300" step="1" value="100"></label>
+  <label><input type="checkbox" name="saturationReactive"> Reactive</label>
+
+  <label>Brightness <input type="range" name="brightness" min="20" max="300" step="1" value="100"></label>
+  <label><input type="checkbox" name="brightnessReactive"> Reactive</label>
+
+  <label>Contrast <input type="range" name="contrast" min="100" max="300" step="1" value="100"></label>
+  <label><input type="checkbox" name="contrastReactive"> Reactive</label>
+
+  <button type="button" id="resetColors">Reset</button>
+
+  <script>
+    const defaults = {
+      hue: 0,
+      saturation: 100,
+      brightness: 100,
+      contrast: 100,
+      hueReactive: false,
+      saturationReactive: false,
+      brightnessReactive: false,
+      contrastReactive: false
+    };
+
+    document.getElementById("resetColors").addEventListener("click", () => {
+      Object.entries(defaults).forEach(([name, value]) => {
+        const input = document.querySelector(`[name="${name}"]`);
+        if (!input) return;
+        if (input.type === "checkbox") input.checked = value;
+        else input.value = value;
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    });
+  </script>
+</body>
+</html>
