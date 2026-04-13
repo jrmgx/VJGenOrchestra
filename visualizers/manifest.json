@@ -1,4 +1,5 @@
 [
+ "Webcam",
  "TheEye",
  "SimpleViz",
  "Text",
@@ -20,5 +21,6 @@
  "Organic",
  "Trail",
  "Chromatic",
- "Bloom"
+ "Bloom",
+ "Colors"
 ]
